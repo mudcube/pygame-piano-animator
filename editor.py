@@ -53,7 +53,7 @@ import pygame
 from common import (ACCENT, BAR_BG, BG, FELT_H, FINGER_NAMES, HAND_COLORS, HAND_NAMES,
                     LEAD_IN, PANEL, PANEL_EDGE, TEXT, TEXT_DIM, TOP_BAR_H, Button, Dialog,
                     Keyboard, Performance, Transport, bottom_layout, default_export_name,
-                    draw_felt, draw_hand_area, draw_pianist_badge, fmt_time, mix, pick_file,
+                    draw_felt, draw_hand_area, draw_pianist_badge, format_time, mix, pick_file,
                     save_file_dialog)
 import pianist as pianists
 from fingering import CHORD_TOL, group_notes, mirror_pitch, plan_fingering, score_fingering
@@ -403,7 +403,7 @@ class FingeringEditor(Transport):
         else:
             self.dirty = True
             self._rebuild_due = SEQ_REBUILD_T
-        self.say(f"{note_name(n.pitch)} at {fmt_time(n.start, True)}: "
+        self.say(f"{note_name(n.pitch)} at {format_time(n.start, True)}: "
                  f"{HAND_NAMES[hand].lower()}, finger {finger} ({FINGER_NAMES[finger].lower()})")
 
     def set_hand(self, idxs, hand):
@@ -980,7 +980,7 @@ class FingeringEditor(Transport):
                                 hint=str(f)) for f in range(1, 6)]
             items.append(MenuItem(HAND_NAMES[h], h, children=fingers, checked=(h == n.hand), hint=k))
         items.append(MenuItem("Sequential fingering from here", "seq", hint="↵"))
-        title = f"{note_name(n.pitch)} at {fmt_time(n.start, True)}"
+        title = f"{note_name(n.pitch)} at {format_time(n.start, True)}"
 
         def pick(h, f):
             if h == "seq":
@@ -1223,7 +1223,7 @@ class FingeringEditor(Transport):
             while k * step <= t1:
                 x = int(self.x_of(k * step))
                 pygame.draw.line(s, TEXT_DIM, (x, r.bottom - 5), (x, r.bottom))
-                lab = fmt_time(k * step, True)[:-1] if step < 1 else fmt_time(k * step)
+                lab = format_time(k * step, True)[:-1] if step < 1 else format_time(k * step)
                 s.blit(self._label(lab, "label", TEXT_DIM), (x + 3, r.y + 3))
                 k += 1
         x = self.playhead_x
@@ -1240,7 +1240,7 @@ class FingeringEditor(Transport):
         s.blit(img, (10, (r.h - img.get_height()) // 2))
         x = 10 + img.get_width() + 18
         state = "Playing" if not self.paused else "Paused"
-        info = (f"{state}   {fmt_time(self.t, True)} / {fmt_time(self.song.duration)}    "
+        info = (f"{state}   {format_time(self.t, True)} / {format_time(self.song.duration)}    "
                 f"speed {int(round(self.speed * 100))}%    view {self.view_secs:.1f}s    {self.midi.status()}")
         img = self.fonts["small"].render(info, True, TEXT_DIM)
         if x + img.get_width() < self._buttons_left:
@@ -1270,7 +1270,7 @@ class FingeringEditor(Transport):
             f = self.finger[self.hover]
             text = (f"{note_name(n.pitch)}   {HAND_NAMES[n.hand].lower()}, "
                     f"finger {f if f else '?'}{' (' + FINGER_NAMES[f].lower() + ')' if f else ''}"
-                    f"   at {fmt_time(n.start, True)}   length {n.end - n.start:.2f}s   velocity {n.velocity}"
+                    f"   at {format_time(n.start, True)}   length {n.end - n.start:.2f}s   velocity {n.velocity}"
                     + ("   · set by you" if self.hover in self.user_set else "")
                     + (f"   · {difficulty_word(self.difficulty[self.hover])}" if self.difficulty else ""))
             color = TEXT

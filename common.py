@@ -59,7 +59,7 @@ def mix(c1, c2, amount):
     return tuple(int(a + (b - a) * amount) for a, b in zip(c1, c2))
 
 
-def fmt_time(seconds, frac=False):
+def format_time(seconds, frac=False):
     neg = seconds < 0
     seconds = abs(seconds)
     m, s = divmod(seconds, 60)

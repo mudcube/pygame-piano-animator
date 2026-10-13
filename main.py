@@ -41,7 +41,7 @@ import pygame
 from common import (BAR_BG, BAR_FILL, BAR_LINE, BG, FELT_H, FPS, HAND_COLORS, LANE_LINE,
                     LEAD_IN, TEXT, TEXT_DIM, TOP_BAR_H, WINDOW_SIZE, Button, Keyboard,
                     MidiOut, Performance, Transport, bottom_layout, center_text, draw_felt,
-                    draw_hand_area, draw_pianist_badge, fmt_time, load_fonts, mix, pick_file,
+                    draw_hand_area, draw_pianist_badge, format_time, load_fonts, mix, pick_file,
                     MAX_FRAME_DT, show_loading)
 import pianist as pianists
 from hands import HandAnimator, draw_hands, pair_hands
@@ -256,7 +256,7 @@ class Visualizer(Transport):
             frac = min(1.0, max(0.0, self.t / self.song.duration))
             pygame.draw.rect(s, mix(BAR_FILL, BAR_BG, 0.35), (0, 0, int(r.w * frac), r.h))
             pygame.draw.line(s, BAR_FILL, (int(r.w * frac), 0), (int(r.w * frac), r.h), 2)
-            left = f"{self.song.title}    {fmt_time(self.t)} / {fmt_time(self.song.duration)}"
+            left = f"{self.song.title}    {format_time(self.t)} / {format_time(self.song.duration)}"
         else:
             left = "No song loaded"
         img = self.fonts["normal"].render(left, True, TEXT)
