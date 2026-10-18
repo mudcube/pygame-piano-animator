@@ -39,6 +39,7 @@ import os
 
 import pygame
 
+import pianist as pianists
 from common import (
     BAR_BG,
     BAR_FILL,
@@ -49,6 +50,7 @@ from common import (
     HAND_COLORS,
     LANE_LINE,
     LEAD_IN,
+    MAX_FRAME_DT,
     TEXT,
     TEXT_DIM,
     TOP_BAR_H,
@@ -67,10 +69,8 @@ from common import (
     load_fonts,
     mix,
     pick_file,
-    MAX_FRAME_DT,
     show_loading,
 )
-import pianist as pianists
 from hands import HandAnimator, draw_hands, pair_hands
 from midi_loader import LEFT, RIGHT, load_song
 
@@ -113,7 +113,7 @@ class Visualizer(Transport):
         pygame.display.set_caption(f"Piano Animator - {song.title}")
 
     def layout(self, size):
-        w, h = size
+        w, _h = size
         kb_rect, self.hand_rect = bottom_layout(size)
         self.bar_rect = pygame.Rect(0, 0, w, TOP_BAR_H)
         self.fall_rect = pygame.Rect(0, TOP_BAR_H, w, kb_rect.y - FELT_H - TOP_BAR_H)
@@ -290,7 +290,7 @@ class Visualizer(Transport):
         s.blit(img, (10, (r.h - img.get_height()) // 2))
 
         right = (
-            f"speed {int(round(self.speed * 100))}%   view {self.window_secs:.1f}s   "
+            f"speed {round(self.speed * 100)}%   view {self.window_secs:.1f}s   "
             f"{self.midi.status()}      Space  ←→  ↑↓  +/-  M  O  H  F   Esc menu"
         )
         img = self.fonts["small"].render(right, True, TEXT_DIM)
@@ -387,7 +387,7 @@ class MainMenu:
         w, h = s.get_size()
         s.fill(BG)
         # a strip of keyboard along the bottom, for a bit of atmosphere
-        kb_rect, hand_rect = bottom_layout((w, h))
+        kb_rect, _hand_rect = bottom_layout((w, h))
         # (true proportions, like the player's, just without the hand area)
         kb = Keyboard(pygame.Rect(kb_rect.x, h - kb_rect.h, kb_rect.w, kb_rect.h))
         kb.draw(s, {60: RIGHT, 64: RIGHT, 67: RIGHT, 36: LEFT, 43: LEFT})

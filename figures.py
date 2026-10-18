@@ -36,6 +36,7 @@ the passage around it).
 
 from __future__ import annotations
 
+import itertools
 import math
 
 LEFT, RIGHT = "L", "R"
@@ -149,11 +150,11 @@ def find_key(run_pcs, context_hist, first=None, last=None):
     for t in range(12):
         for mode, prof in (("maj", KK_MAJ), ("min", KK_MIN)):
             if mode == "maj":
-                forms = [(set((t + x) % 12 for x in MAJOR), False)]
+                forms = [({(t + x) % 12 for x in MAJOR}, False)]
             else:
                 forms = [
-                    (set((t + x) % 12 for x in HARM), False),
-                    (set((t + x) % 12 for x in MELU) | set((t + x) % 12 for x in NAT), True),
+                    ({(t + x) % 12 for x in HARM}, False),
+                    ({(t + x) % 12 for x in MELU} | {(t + x) % 12 for x in NAT}, True),
                 ]
             for scale, mel in forms:
                 if not run_pcs <= scale:
@@ -188,7 +189,7 @@ def scale_fingering(ps, thumbs_up, hand, thumbs_down, scales, opening=True):
     n = len(ps)
     going_up = [(ps[i + 1] > ps[i]) if i + 1 < n else (ps[i] > ps[i - 1]) for i in range(n)]
     arrive_up = [(ps[i] > ps[i - 1]) if i else going_up[0] for i in range(n)]
-    allp = sorted(set(p % 12 for p in ps))
+    allp = sorted({p % 12 for p in ps})
     up_pcs, dn_pcs = scales
 
     def steps(pc, pcs, thumbs, direction, skip_self=False):
@@ -553,7 +554,7 @@ def detect(groups, hand, context=None, vpitch=None):
             if s[-1].pitch - s[0].pitch == 12:
                 octs.append((gi, s))
     in_run = set()
-    for (g1, _), (g2, _) in zip(octs, octs[1:]):
+    for (g1, _), (g2, _) in itertools.pairwise(octs):
         if g2 == g1 + 1 and groups[g2][0] - groups[g1][0] <= GAP:
             in_run |= {g1, g2}
     for gi, s in octs:
@@ -725,7 +726,7 @@ def _stepwise(notes, ps, ts, hand, context, put):
             if len(b) < 5:
                 continue
             bp = [sp[q] for q in b]
-            pcs = set(p % 12 for p in bp)
+            pcs = {p % 12 for p in bp}
             t0, t1 = ts[seg[b[0]]], ts[seg[b[-1]]]
             hist = _hist(context, t0 - 2.0, t1 + 2.0)
             k = find_key(pcs, hist, bp[0] % 12, bp[-1] % 12)
@@ -757,14 +758,14 @@ def _arpeggios(notes, ps, hand, vp, put):
         while (
             j + 1 < n
             and 1 <= abs(ps[j + 1] - ps[j]) <= 5
-            and len(set(p % 12 for p in ps[i : j + 2])) <= 4
-            and (abs(ps[j + 1] - ps[j]) >= 3 or len(set(p % 12 for p in ps[i : j + 2])) == 4)
+            and len({p % 12 for p in ps[i : j + 2]}) <= 4
+            and (abs(ps[j + 1] - ps[j]) >= 3 or len({p % 12 for p in ps[i : j + 2]}) == 4)
         ):
             j += 1
         if j - i >= 3:
             seg = list(range(i, j + 1))
             sp = [ps[k] for k in seg]
-            pcs = set(p % 12 for p in sp)
+            pcs = {p % 12 for p in sp}
             ch = chord_of(pcs) if 3 <= len(pcs) <= 4 else None
             span = max(sp) - min(sp)
             if ch and span > 13:  # an octave fits the hand: no crossing needed
@@ -885,7 +886,7 @@ def _double_notes(pairs, hand, context, put):
                 j += 1
             if j - i >= 3:
                 seg = range(i, j + 1)
-                pcs = set(pairs[k][0].pitch % 12 for k in seg) | set(pairs[k][1].pitch % 12 for k in seg)
+                pcs = {pairs[k][0].pitch % 12 for k in seg} | {pairs[k][1].pitch % 12 for k in seg}
                 hist = _hist(context, pairs[i][0].start - 2, pairs[j][0].start + 2)
                 k = find_key(pcs, hist)
                 if k and k[0][1] in ("maj", "min"):
@@ -948,7 +949,7 @@ def _double_notes(pairs, hand, context, put):
         if j - i >= 2 and hi_k - lo_k >= 0.9:
             for q in range(i, j + 1):
                 a, b = pairs[q]
-                r = int(round(_kp(a.pitch) - lo_k))
+                r = round(_kp(a.pitch) - lo_k)
                 if 0 <= r <= 2:
                     put(a, pos[r][0], W_THIRDS * 0.7)
                     put(b, pos[r][1], W_THIRDS * 0.7)

@@ -20,6 +20,7 @@ cuff/sleeve, and the shadow.
 
 from __future__ import annotations
 
+import itertools
 import math
 
 SKINS = {
@@ -117,7 +118,7 @@ def _chaikin(pts, n=2):
 
 
 def _hull(pts):
-    pts = sorted(set((round(x, 2), round(y, 2)) for x, y in pts))
+    pts = sorted({(round(x, 2), round(y, 2)) for x, y in pts})
     if len(pts) < 3:
         return pts
 
@@ -163,7 +164,7 @@ class _Pen:
             self.gfx = None
 
     def circle(self, c, r, color):
-        x, y, r = int(round(c[0])), int(round(c[1])), max(1, int(round(r)))
+        x, y, r = round(c[0]), round(c[1]), max(1, round(r))
         if self.gfx:
             self.gfx.filled_circle(self.surf, x, y, r, color)
             self.gfx.aacircle(self.surf, x, y, r, color)
@@ -171,7 +172,7 @@ class _Pen:
             self.pg.draw.circle(self.surf, color, (x, y), r)
 
     def poly(self, pts, color):
-        pts = [(int(round(x)), int(round(y))) for x, y in pts]
+        pts = [(round(x), round(y)) for x, y in pts]
         if len(pts) < 3:
             return
         if self.gfx:
@@ -198,7 +199,7 @@ class _Pen:
         self.circle(b, r2, color)
 
     def line(self, a, b, color, w=1):
-        w = max(1, int(round(w)))
+        w = max(1, round(w))
         if w == 1 and self.gfx:
             self.pg.draw.aaline(self.surf, color, a, b)
         else:
@@ -236,10 +237,10 @@ class _Hand:
             base = FINGER_W_IN[f] * fw * ppi / 2
             if f == 1:
                 rs = [base * 1.22, base * 1.0, base * 0.9]
-                segs = list(zip(c, c[1:]))
+                segs = list(itertools.pairwise(c))
             else:
                 rs = [base * t for t in SEG_TAPER]
-                segs = list(zip(c[1:], c[2:]))
+                segs = list(itertools.pairwise(c[1:]))
             self.radius[f] = [(a, b, r * _depth((a[2] + b[2]) / 2, ppi)) for (a, b), r in zip(segs, rs)]
         self.lw = skin["outline"] * 0.035 * ppi
         wx, wy = (self.wr[0] + self.wu[0]) / 2, (self.wr[1] + self.wu[1]) / 2
@@ -302,7 +303,7 @@ class _Hand:
         t_root = (t_mcp[0] + mx * r_t * 0.8, t_mcp[1] + my * r_t * 0.8)
         # the free edge: a curve sagging toward the wrist
         span = math.hypot(k_out[0] - t_att[0], k_out[1] - t_att[1])
-        reach = sum(math.hypot(q[0] - p_[0], q[1] - p_[1]) for p_, q in zip(th, th[1:]))
+        reach = sum(math.hypot(q[0] - p_[0], q[1] - p_[1]) for p_, q in itertools.pairwise(th))
         spread = min(1.0, span / max(1e-6, 0.55 * reach))  # 0 = thumb at the hand, 1 = spread
         mid = ((t_att[0] + k_out[0]) / 2, (t_att[1] + k_out[1]) / 2)
         sag = span * (0.32 - 0.2 * spread)
@@ -455,7 +456,7 @@ def _nail(pen, h, f, fill, edge):
     """
     segs = h.radius[f]
     a, b, r = segs[-1]
-    pa, pb, pr = segs[-2]
+    _pa, _pb, pr = segs[-2]
     dx, dy = b[0] - a[0], b[1] - a[1]
     drop = a[2] - b[2]
     L = math.hypot(math.hypot(dx, dy), drop)  # true length of the phalanx
@@ -614,7 +615,7 @@ def _draw_robot(pen, h):
                 # a soft sheen along the membrane's edge
                 sheen = _mix(joint, (255, 255, 255), 0.25)
                 e = h.web_edge
-                for p, q in zip(e[2:-3], e[3:-2]):
+                for p, q in itertools.pairwise(e[2:-2]):
                     d = (h.wc[0] - p[0], h.wc[1] - p[1])
                     L = math.hypot(*d) or 1
                     o = 0.06 * h.ppi
@@ -690,7 +691,7 @@ def _palm_seams(pen, h, edge):
                 (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * ctrl[1] + t * t * side[1],
             )
         )
-    for p, q in zip(pts, pts[1:]):
+    for p, q in itertools.pairwise(pts):
         pen.line(p, q, edge, max(1, 0.03 * h.ppi))
     r = max(1.2, 0.045 * h.ppi)
     for t in (0.25, 0.5):
@@ -720,7 +721,6 @@ def draw_skinned(surf, items):
     (screen x, screen y, height in pixels). Shadows first (all hands), then
     each hand, lowest first.
     """
-    import pygame
 
     hands = []
     for it in items:

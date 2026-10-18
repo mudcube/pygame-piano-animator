@@ -48,7 +48,7 @@ chords back are respected. Fingers already given in the file are kept.
 
 from __future__ import annotations
 
-from itertools import combinations, product
+from itertools import combinations, pairwise, product
 
 MIRROR_SUM = 2 * 62  # reflect about D4: 124 - p
 
@@ -236,7 +236,7 @@ def apply_pianist(p):
     if p is None:
         return
     MAX_SPEED = float(p.b("max_speed"))
-    from hands import reach_scale, hand_span_inches
+    from hands import hand_span_inches, reach_scale
 
     k = hand_span_inches(p.anatomy) / hand_span_inches(None)
     for f, v in BASE_RELAXED.items():
@@ -423,7 +423,7 @@ def shape_cost(pairs):
     """
     pairs = sorted(pairs)
     c = 0.0
-    for (p1, f1), (p2, f2) in zip(pairs, pairs[1:]):
+    for (p1, f1), (p2, f2) in pairwise(pairs):
         if f1 == f2:
             if double_ok(p1, p2, f1):
                 continue

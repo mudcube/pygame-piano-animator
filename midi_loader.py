@@ -22,7 +22,6 @@ import os
 import struct
 import sys
 from dataclasses import dataclass, replace
-from typing import List, Optional
 
 import pretty_midi
 
@@ -58,7 +57,7 @@ class Note:
     velocity: int  # 1..127
     track: int  # index of the instrument/track it came from
     hand: str  # LEFT or RIGHT (from track names/registers, else hand_split.py)
-    finger: Optional[int] = None  # 1..5 when the file carries fingering (see below)
+    finger: int | None = None  # 1..5 when the file carries fingering (see below)
 
     @property
     def duration(self) -> float:
@@ -79,7 +78,7 @@ class TrackInfo:
     name: str
     program: int  # General MIDI program (0 = acoustic grand)
     note_count: int
-    hand: Optional[str]  # LEFT/RIGHT if the whole track is one hand, else None
+    hand: str | None  # LEFT/RIGHT if the whole track is one hand, else None
 
 
 def pedal_switches(controls):
@@ -98,15 +97,15 @@ class MidiSong:
 
     def __init__(
         self,
-        notes: List[Note],
-        tracks: List[TrackInfo],
+        notes: list[Note],
+        tracks: list[TrackInfo],
         duration: float,
-        bar_times: List[float],
-        beat_times: List[float],
-        path: Optional[str] = None,
-        controls: Optional[list] = None,
+        bar_times: list[float],
+        beat_times: list[float],
+        path: str | None = None,
+        controls: list | None = None,
     ):
-        self.notes: List[Note] = sorted(notes, key=lambda n: (n.start, n.pitch))
+        self.notes: list[Note] = sorted(notes, key=lambda n: (n.start, n.pitch))
         # pedals: [(time, controller, value)] for sustain (64), sostenuto (66), soft (67).
         # Performance recordings (MAESTRO, Disklavier) send the pedal's exact
         # position many times a second, and a pianist's resting foot often
@@ -133,13 +132,13 @@ class MidiSong:
     def __len__(self) -> int:
         return len(self.notes)
 
-    def notes_between(self, t0: float, t1: float) -> List[Note]:
+    def notes_between(self, t0: float, t1: float) -> list[Note]:
         """Notes that overlap the time window [t0, t1), in start order."""
         lo = bisect.bisect_left(self._starts, t0 - self._max_duration)
         hi = bisect.bisect_left(self._starts, t1)
         return [n for n in self.notes[lo:hi] if n.end > t0]
 
-    def active_notes(self, t: float) -> List[Note]:
+    def active_notes(self, t: float) -> list[Note]:
         """Notes sounding at time t (start <= t < end)."""
         lo = bisect.bisect_left(self._starts, t - self._max_duration)
         hi = bisect.bisect_right(self._starts, t)
@@ -173,7 +172,7 @@ class MidiSong:
 # --------------------------------------------------------------------------- #
 
 
-def _hand_from_name(name: str) -> Optional[str]:
+def _hand_from_name(name: str) -> str | None:
     """Recognise track names like 'Right Hand', 'RH', 'Piano L', 'Left'."""
     n = name.lower().replace("-", " ").replace("_", " ")
     words = n.split()
@@ -447,8 +446,8 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
     # (hand, finger) marks keyed by (start time, pitch) so they line up with pretty_midi's notes
     marks = {(round(float(pm.tick_to_time(t)), 4), p): hf for (t, p), hf in read_markers(path).items()}
 
-    notes: List[Note] = []
-    tracks: List[TrackInfo] = []
+    notes: list[Note] = []
+    tracks: list[TrackInfo] = []
     for i, inst in instruments:
         for n in inst.notes:
             mark_hand, finger = marks.get((round(float(n.start), 4), n.pitch), (None, None))

@@ -1,7 +1,8 @@
 """The app's screens, driven headlessly with scripted events."""
 
-import pygame
+import itertools
 
+import pygame
 from conftest import midi_path
 
 import main
@@ -56,6 +57,7 @@ def test_editor_sequential_fingering(screen):
 
 def test_nail_slides_to_tip_and_squashes_as_finger_curls():
     import math
+
     import skins
 
     class Pen:
@@ -81,8 +83,8 @@ def test_nail_slides_to_tip_and_squashes_as_finger_curls():
     gaps, lengths = zip(*spans)
     # the skin beyond the nail shrinks away, and the nail gets shorter
     assert gaps[0] > 0.5 * r and all(g < 0.15 * r for g in gaps[3:])
-    assert all(x >= y - 1e-6 for x, y in zip(gaps, gaps[1:4]))
-    assert all(x >= y - 1e-6 for x, y in zip(lengths, lengths[1:4]))
+    assert all(x >= y - 1e-6 for x, y in itertools.pairwise(gaps[:4]))
+    assert all(x >= y - 1e-6 for x, y in itertools.pairwise(lengths[:4]))
     assert lengths[3] < 0.5 * lengths[0]
 
 

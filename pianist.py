@@ -82,15 +82,15 @@ def clamp_bone(bid, v):
 # kind "slider": min, max, default, fmt(value)->str, lo/hi end labels
 # kind "options": [(value, label, detail)], default
 def _pct(v):
-    return f"{int(round(v * 100))}%"
+    return f"{round(v * 100)}%"
 
 
 def _ms(v):
-    return f"{int(round(v * 1000))} ms"
+    return f"{round(v * 1000)} ms"
 
 
 def _deg(v):
-    return f"{int(round(v))}°"
+    return f"{round(v)}°"
 
 
 def _mps(v):
@@ -110,247 +110,247 @@ def finger_lead(a):
 
 
 def _lead(v):
-    return f"{int(round(finger_lead(v)[0] * 1000))} ms ahead"
+    return f"{round(finger_lead(v)[0] * 1000)} ms ahead"
 
 
 def _bias(v):
     if abs(v) < 0.05:
         return "neutral"
-    return f"{int(round(abs(v) * 100))}% toward {'stretching' if v > 0 else 'shifting / crossing'}"
+    return f"{round(abs(v) * 100)}% toward {'stretching' if v > 0 else 'shifting / crossing'}"
 
 
 BEHAVIORS = [
     # ---- motion (hands.py)
-    dict(
-        id="retraction",
-        group="Motion",
-        label="Retraction of unused fingers",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.1,
-        fmt=_pct,
-        lo="Stay over the keys",
-        hi="Curl well back",
-        desc="How far fingers that aren't playing, and aren't about to, pull back and up toward the palm.",
-    ),
-    dict(
-        id="finger_curve",
-        group="Motion",
-        label="Finger curvature",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.4,
-        fmt=_pct,
-        lo="Flatter fingers",
-        hi="Strongly curved",
-        desc="How curved the fingers are while they press the keys: flatter fingers let the hand sit "
+    {
+        "id": "retraction",
+        "group": "Motion",
+        "label": "Retraction of unused fingers",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.1,
+        "fmt": _pct,
+        "lo": "Stay over the keys",
+        "hi": "Curl well back",
+        "desc": "How far fingers that aren't playing, and aren't about to, pull back and up toward the palm.",
+    },
+    {
+        "id": "finger_curve",
+        "group": "Motion",
+        "label": "Finger curvature",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.4,
+        "fmt": _pct,
+        "lo": "Flatter fingers",
+        "hi": "Strongly curved",
+        "desc": "How curved the fingers are while they press the keys: flatter fingers let the hand sit "
         "further back from the keys, curved fingers bring it forward over them.",
-    ),
-    dict(
-        id="antic_hand",
-        group="Motion",
-        label="Anticipation speed (hand)",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Last moment",
-        hi="Very early",
-        desc="How early the whole hand moves into position for the notes coming up.",
-    ),
-    dict(
-        id="antic_fingers",
-        group="Motion",
-        label="Anticipation speed (fingers)",
-        kind="slider",
-        min=-1.0,
-        max=1.0,
-        default=0.5,
-        fmt=_lead,
-        lo="Just in time",
-        hi="Very early",
-        desc="How early each finger travels to its next key and waits there, ready to strike - "
+    },
+    {
+        "id": "antic_hand",
+        "group": "Motion",
+        "label": "Anticipation speed (hand)",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Last moment",
+        "hi": "Very early",
+        "desc": "How early the whole hand moves into position for the notes coming up.",
+    },
+    {
+        "id": "antic_fingers",
+        "group": "Motion",
+        "label": "Anticipation speed (fingers)",
+        "kind": "slider",
+        "min": -1.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _lead,
+        "lo": "Just in time",
+        "hi": "Very early",
+        "desc": "How early each finger travels to its next key and waits there, ready to strike - "
         "a thumb passing under, say. The value is the longest head start; a finger never "
         "leaves before it has let go of its last key, and never so late that it would have "
         "to move faster than the top travel speed.",
-    ),
-    dict(
-        id="cross_height",
-        group="Motion",
-        label="Crossing height",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.33,
-        fmt=_pct,
-        lo="Skim over",
-        hi="Arch high",
-        desc="How high a finger arches when it crosses over the thumb.",
-    ),
-    dict(
-        id="lift_height",
-        group="Motion",
-        label="Finger lift height",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Close to the keys",
-        hi="High lift",
-        desc="How high a finger rises above its key before striking it.",
-    ),
-    dict(
-        id="wrist_bounce",
-        group="Motion",
-        label="Wrist bounce (repeated chords)",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Still wrist",
-        hi="Big bounce",
-        desc="In repeated chords and octaves the hand plays from the wrist: it drops onto each chord "
+    },
+    {
+        "id": "cross_height",
+        "group": "Motion",
+        "label": "Crossing height",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.33,
+        "fmt": _pct,
+        "lo": "Skim over",
+        "hi": "Arch high",
+        "desc": "How high a finger arches when it crosses over the thumb.",
+    },
+    {
+        "id": "lift_height",
+        "group": "Motion",
+        "label": "Finger lift height",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Close to the keys",
+        "hi": "High lift",
+        "desc": "How high a finger rises above its key before striking it.",
+    },
+    {
+        "id": "wrist_bounce",
+        "group": "Motion",
+        "label": "Wrist bounce (repeated chords)",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Still wrist",
+        "hi": "Big bounce",
+        "desc": "In repeated chords and octaves the hand plays from the wrist: it drops onto each chord "
         "and springs back up between them. This sets how high it springs.",
-    ),
-    dict(
-        id="tremolo_rotation",
-        group="Motion",
-        label="Wrist rotation (tremolos)",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Fingers only",
-        hi="Strong rotation",
-        desc="In tremolos and other quick alternations between the two sides of the hand, the forearm "
+    },
+    {
+        "id": "tremolo_rotation",
+        "group": "Motion",
+        "label": "Wrist rotation (tremolos)",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Fingers only",
+        "hi": "Strong rotation",
+        "desc": "In tremolos and other quick alternations between the two sides of the hand, the forearm "
         "rotates, rocking the thumb side and the little-finger side down in turn.",
-    ),
-    dict(
-        id="gesture_finger_action",
-        group="Motion",
-        label="Finger action in bounces & tremolos",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.25,
-        fmt=_pct,
-        lo="Hand does it all",
-        hi="Fingers lift fully",
-        desc="How much the fingers still lift on their own when the wrist bounce or rotation is "
+    },
+    {
+        "id": "gesture_finger_action",
+        "group": "Motion",
+        "label": "Finger action in bounces & tremolos",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.25,
+        "fmt": _pct,
+        "lo": "Hand does it all",
+        "hi": "Fingers lift fully",
+        "desc": "How much the fingers still lift on their own when the wrist bounce or rotation is "
         "doing the playing (repeated chords, tremolos).",
-    ),
-    dict(
-        id="cross_turn",
-        group="Motion",
-        label="Wrist turn for thumb crossings",
-        kind="slider",
-        min=0.0,
-        max=30.0,
-        default=14.0,
-        fmt=_deg,
-        lo="Quiet wrist",
-        hi="Turns a lot",
-        desc="How far the hand turns toward the little finger while the thumb passes under "
+    },
+    {
+        "id": "cross_turn",
+        "group": "Motion",
+        "label": "Wrist turn for thumb crossings",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 30.0,
+        "default": 14.0,
+        "fmt": _deg,
+        "lo": "Quiet wrist",
+        "hi": "Turns a lot",
+        "desc": "How far the hand turns toward the little finger while the thumb passes under "
         "(and back the other way when a finger crosses over).",
-    ),
-    dict(
-        id="smoothness",
-        group="Motion",
-        label="Hand motion smoothness",
-        kind="slider",
-        min=0.02,
-        max=0.15,
-        default=0.07,
-        fmt=_ms,
-        lo="Quick, direct",
-        hi="Smooth, flowing",
-        desc="How much the hand's movements are smoothed: shifts accelerate and settle over this long.",
-    ),
-    dict(
-        id="early_release",
-        group="Motion",
-        label="Early release before a jump",
-        kind="slider",
-        min=0.05,
-        max=0.40,
-        default=0.22,
-        fmt=_ms,
-        lo="Legato, late",
-        hi="Detached, early",
-        desc="How early a finger lets go of its key when it has to jump straight to another one. "
+    },
+    {
+        "id": "smoothness",
+        "group": "Motion",
+        "label": "Hand motion smoothness",
+        "kind": "slider",
+        "min": 0.02,
+        "max": 0.15,
+        "default": 0.07,
+        "fmt": _ms,
+        "lo": "Quick, direct",
+        "hi": "Smooth, flowing",
+        "desc": "How much the hand's movements are smoothed: shifts accelerate and settle over this long.",
+    },
+    {
+        "id": "early_release",
+        "group": "Motion",
+        "label": "Early release before a jump",
+        "kind": "slider",
+        "min": 0.05,
+        "max": 0.40,
+        "default": 0.22,
+        "fmt": _ms,
+        "lo": "Legato, late",
+        "hi": "Detached, early",
+        "desc": "How early a finger lets go of its key when it has to jump straight to another one. "
         "This changes what you hear (without the pedal).",
-    ),
-    dict(
-        id="max_speed",
-        group="Motion",
-        label="Top travel speed",
-        kind="slider",
-        min=0.5,
-        max=5.0,
-        default=3.0,
-        fmt=_mps,
-        lo="Unhurried",
-        hi="Virtuoso leaps",
-        desc="The fastest any part of the hand - wrist or fingertip - can travel across the keys. "
+    },
+    {
+        "id": "max_speed",
+        "group": "Motion",
+        "label": "Top travel speed",
+        "kind": "slider",
+        "min": 0.5,
+        "max": 5.0,
+        "default": 3.0,
+        "fmt": _mps,
+        "lo": "Unhurried",
+        "hi": "Virtuoso leaps",
+        "desc": "The fastest any part of the hand - wrist or fingertip - can travel across the keys. "
         "Fingerings and the split between the hands are chosen so the hands never need to "
         "move faster; when the music still asks for more, the key is let go earlier or struck "
         "late, and that is what you hear.",
-    ),
-    dict(
-        id="key_area_near",
-        group="Motion",
-        label="Playing area on the keys: nearest the edge",
-        kind="slider",
-        min=0.0,
-        max=0.5,
-        default=0.0,
-        fmt=_pct,
-        lo="Right at the edge",
-        hi="Well in",
-        desc="How close to a key's front edge a fingertip may play, as a share of the key's playable "
+    },
+    {
+        "id": "key_area_near",
+        "group": "Motion",
+        "label": "Playing area on the keys: nearest the edge",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 0.5,
+        "default": 0.0,
+        "fmt": _pct,
+        "lo": "Right at the edge",
+        "hi": "Well in",
+        "desc": "How close to a key's front edge a fingertip may play, as a share of the key's playable "
         "length (on white keys, up to just past the black keys). Loud notes are played near this end.",
-    ),
-    dict(
-        id="key_area_far",
-        group="Motion",
-        label="Playing area on the keys: furthest up",
-        kind="slider",
-        min=0.3,
-        max=1.0,
-        default=1.0,
-        fmt=_pct,
-        lo="Near the edge only",
-        hi="Up among the black keys",
-        desc="How far up a key a fingertip may play. Within this area the loudness decides: soft notes "
+    },
+    {
+        "id": "key_area_far",
+        "group": "Motion",
+        "label": "Playing area on the keys: furthest up",
+        "kind": "slider",
+        "min": 0.3,
+        "max": 1.0,
+        "default": 1.0,
+        "fmt": _pct,
+        "lo": "Near the edge only",
+        "hi": "Up among the black keys",
+        "desc": "How far up a key a fingertip may play. Within this area the loudness decides: soft notes "
         "may use all of it, loud ones only the front part, where the key has more leverage.",
-    ),
-    dict(
-        id="roll_speed",
-        group="Motion",
-        label="Rolled chord speed",
-        kind="slider",
-        min=0.015,
-        max=0.08,
-        default=0.035,
-        fmt=_ms,
-        lo="Quick roll",
-        hi="Slow roll",
-        desc="Chords too wide for this hand are rolled from the bottom up; this is the time between the notes of the roll.",
-    ),
+    },
+    {
+        "id": "roll_speed",
+        "group": "Motion",
+        "label": "Rolled chord speed",
+        "kind": "slider",
+        "min": 0.015,
+        "max": 0.08,
+        "default": 0.035,
+        "fmt": _ms,
+        "lo": "Quick roll",
+        "hi": "Slow roll",
+        "desc": "Chords too wide for this hand are rolled from the bottom up; this is the time between the notes of the roll.",
+    },
     # ---- fingering (fingering.py / figures.py / hand_split.py)
-    dict(
-        id="fingering_model",
-        group="Fingering",
-        label="Fingering model",
-        kind="options",
-        default="learned",
-        options=[
+    {
+        "id": "fingering_model",
+        "group": "Fingering",
+        "label": "Fingering model",
+        "kind": "options",
+        "default": "learned",
+        "options": [
             (
                 "learned",
                 "Learned from pianists",
@@ -362,100 +362,100 @@ BEHAVIORS = [
                 "The original weights, tuned to match Hanon's printed fingering, weak-finger training included",
             ),
         ],
-        desc="The overall cost model behind the fingering. Standard fingerings for scales, "
+        "desc": "The overall cost model behind the fingering. Standard fingerings for scales, "
         "arpeggios, octaves and thirds apply either way; the other settings here adjust it.",
-    ),
-    dict(
-        id="weak_bias",
-        group="Fingering",
-        label="Weak finger bias",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.25,
-        fmt=_pct,
-        lo="Use 4 and 5 freely",
-        hi="Avoid 4 and 5",
-        desc="Bias against the weaker 4th and 5th fingers when stronger ones would do. Every note is still played.",
-    ),
-    dict(
-        id="stretch_bias",
-        group="Fingering",
-        label="Stretch bias",
-        kind="slider",
-        min=-1.0,
-        max=1.0,
-        default=0.0,
-        fmt=_bias,
-        lo="Shift / cross",
-        hi="Stretch",
-        desc="Reach wide intervals by stretching the hand, or by shifting and crossing over/under. "
+    },
+    {
+        "id": "weak_bias",
+        "group": "Fingering",
+        "label": "Weak finger bias",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.25,
+        "fmt": _pct,
+        "lo": "Use 4 and 5 freely",
+        "hi": "Avoid 4 and 5",
+        "desc": "Bias against the weaker 4th and 5th fingers when stronger ones would do. Every note is still played.",
+    },
+    {
+        "id": "stretch_bias",
+        "group": "Fingering",
+        "label": "Stretch bias",
+        "kind": "slider",
+        "min": -1.0,
+        "max": 1.0,
+        "default": 0.0,
+        "fmt": _bias,
+        "lo": "Shift / cross",
+        "hi": "Stretch",
+        "desc": "Reach wide intervals by stretching the hand, or by shifting and crossing over/under. "
         "The reach itself comes from this pianist's anatomy.",
-    ),
-    dict(
-        id="economy",
-        group="Fingering",
-        label="Economy of motion",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Ignore finger travel",
-        hi="Minimise travel",
-        desc="How much to favour fingerings that keep the fingers close to where a relaxed hand "
+    },
+    {
+        "id": "economy",
+        "group": "Fingering",
+        "label": "Economy of motion",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Ignore finger travel",
+        "hi": "Minimise travel",
+        "desc": "How much to favour fingerings that keep the fingers close to where a relaxed hand "
         "already has them, weighing how far each finger must travel against the time it has.",
-    ),
-    dict(
-        id="black_avoid",
-        group="Fingering",
-        label="Thumb and little finger on black keys",
-        kind="slider",
-        min=0.0,
-        max=1.0,
-        default=0.5,
-        fmt=_pct,
-        lo="Don't mind",
-        hi="Avoid strongly",
-        desc="How strongly to avoid putting the thumb (and, less so, the little finger) on black keys.",
-    ),
-    dict(
-        id="chromatic",
-        group="Fingering",
-        label="Chromatic scale fingering",
-        kind="options",
-        default="13",
-        options=[
+    },
+    {
+        "id": "black_avoid",
+        "group": "Fingering",
+        "label": "Thumb and little finger on black keys",
+        "kind": "slider",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5,
+        "fmt": _pct,
+        "lo": "Don't mind",
+        "hi": "Avoid strongly",
+        "desc": "How strongly to avoid putting the thumb (and, less so, the little finger) on black keys.",
+    },
+    {
+        "id": "chromatic",
+        "group": "Fingering",
+        "label": "Chromatic scale fingering",
+        "kind": "options",
+        "default": "13",
+        "options": [
             ("12", "1212123 12121 23…", "1-2: thumb on white keys, 2 on the black keys and on F / C"),
             ("13", "1313123 13131 23…", "Traditional: thumb on white keys, 3 on the black keys, 2 on F / C"),
             ("1234", "1234 123 1234 123…", "Groups of up to four fingers, thumbs on white keys"),
             ("12345", "1234 12345 123…", "Thumb on C, E and A; groups of four, five and three"),
             ("231", "231231 212341…", "Thumb on D, F, G and B"),
         ],
-        desc="Fingering for chromatic scales (shown for the right hand going up from C; the left hand mirrors it).",
-    ),
-    dict(
-        id="repeated",
-        group="Fingering",
-        label="Repeated note fingering",
-        kind="options",
-        default="321",
-        options=[
+        "desc": "Fingering for chromatic scales (shown for the right hand going up from C; the left hand mirrors it).",
+    },
+    {
+        "id": "repeated",
+        "group": "Fingering",
+        "label": "Repeated note fingering",
+        "kind": "options",
+        "default": "321",
+        "options": [
             ("321", "321321…", "Hanon's changing fingers 3-2-1 (4-3-2-1 in fours)"),
             ("12", "121212…", ""),
             ("13", "131313…", ""),
             ("123", "123123…", ""),
             ("1234", "12341234…", ""),
         ],
-        desc="Fingers for quickly repeated notes on one key.",
-    ),
-    dict(
-        id="trill",
-        group="Fingering",
-        label="Trill fingering",
-        kind="options",
-        default="auto",
-        options=[
+        "desc": "Fingers for quickly repeated notes on one key.",
+    },
+    {
+        "id": "trill",
+        "group": "Fingering",
+        "label": "Trill fingering",
+        "kind": "options",
+        "default": "auto",
+        "options": [
             ("auto", "Automatic", "Any strong pair (1-2, 1-3, 2-3, 2-4), never 4-5"),
             ("12", "121212…", ""),
             ("23", "232323…", ""),
@@ -463,20 +463,20 @@ BEHAVIORS = [
             ("14", "141414…", ""),
             ("1423", "14231423…", ""),
         ],
-        desc="Fingers for trills (the lower note takes the lower finger numbers).",
-    ),
-    dict(
-        id="octaves",
-        group="Fingering",
-        label="Octave fingering",
-        kind="options",
-        default="4black",
-        options=[
+        "desc": "Fingers for trills (the lower note takes the lower finger numbers).",
+    },
+    {
+        "id": "octaves",
+        "group": "Fingering",
+        "label": "Octave fingering",
+        "kind": "options",
+        "default": "4black",
+        "options": [
             ("4black", "1-5, 4 on black keys", "Hanon: 4 on the black keys in octave passages"),
             ("5", "1-5 always", "Thumb and little finger for every octave"),
         ],
-        desc="Fingers for octaves (the right hand's; the left hand mirrors it).",
-    ),
+        "desc": "Fingers for octaves (the right hand's; the left hand mirrors it).",
+    },
 ]
 BEHAVIOR = {b["id"]: b for b in BEHAVIORS}
 DEFAULT_BEHAVIOR = {b["id"]: b["default"] for b in BEHAVIORS}
@@ -577,7 +577,7 @@ class Pianist:
     # ----- derived measures ---------------------------------------------------
     def span_whites(self):
         """Comfortable thumb-to-little-finger stretch, in white keys (key centre to key centre)."""
-        from hands import hand_span_inches, WHITE_KEY_IN
+        from hands import WHITE_KEY_IN, hand_span_inches
 
         return hand_span_inches(self.anatomy) / WHITE_KEY_IN
 
@@ -608,7 +608,7 @@ def _ordinal(n):
 
 def interval_name(whites):
     """A white-key distance (key centres) as an interval: 7 -> octave, 8 -> 9th, 9 -> 10th."""
-    n = int(math.floor(whites + 0.15)) + 1
+    n = math.floor(whites + 0.15) + 1
     return _ordinal(n)
 
 

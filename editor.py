@@ -45,12 +45,14 @@ and fingers exactly.
 
 from __future__ import annotations
 
+import itertools
 import math
 import os
 from dataclasses import replace
 
 import pygame
 
+import pianist as pianists
 from common import (
     ACCENT,
     BAR_BG,
@@ -80,7 +82,6 @@ from common import (
     pick_file,
     save_file_dialog,
 )
-import pianist as pianists
 from fingering import CHORD_TOL, group_notes, mirror_pitch, plan_fingering, score_fingering
 from hands import HandAnimator, draw_hands, pair_hands
 from midi_loader import (
@@ -153,16 +154,14 @@ def heat_color(d):
     """0 (easy) green -> 0.5 yellow -> 1 (hard) red; beyond 1 a deeper red."""
     stops = [(0.0, (70, 170, 90)), (0.5, (225, 200, 70)), (1.0, (220, 70, 60)), (1.5, (150, 30, 40))]
     d = max(0.0, min(1.5, d))
-    for (a, ca), (b, cb) in zip(stops, stops[1:]):
+    for (a, ca), (b, cb) in itertools.pairwise(stops):
         if d <= b:
             return mix(ca, cb, (d - a) / (b - a))
     return stops[-1][1]
 
 
 def difficulty_word(d):
-    return (
-        "easy" if d < 0.25 else "moderate" if d < 0.55 else "hard" if d < 1.0 else "very hard"
-    ) + f" ({int(round(d * 100))})"
+    return ("easy" if d < 0.25 else "moderate" if d < 0.55 else "hard" if d < 1.0 else "very hard") + f" ({round(d * 100)})"
 
 
 # --------------------------------------------------------------------------- #
@@ -682,7 +681,7 @@ class FingeringEditor(Transport):
 
     # ----- geometry ---------------------------------------------------------
     def layout(self, size):
-        w, h = size
+        w, _h = size
         kb_rect, self.hand_rect = bottom_layout(size)
         self.bar_rect = pygame.Rect(0, 0, w, TOP_BAR_H)
         self.info_rect = pygame.Rect(0, TOP_BAR_H, w, INFO_H)
@@ -822,9 +821,8 @@ class FingeringEditor(Transport):
                     self.menu = None
                     if not inside and event.button == 3 and self.roll_rect.collidepoint(event.pos):
                         self._context_menu(event.pos)  # right-click elsewhere: a new menu there
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE or self.menu.key(event.key):
-                    self.menu = None
+            elif event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or self.menu.key(event.key)):
+                self.menu = None
             return True
 
         if event.type == pygame.KEYDOWN:
@@ -1132,8 +1130,8 @@ class FingeringEditor(Transport):
         s.set_clip(r)
         rh = self.row_h
         # rows
-        p_hi = min(HIGHEST_PIANO_KEY, int(math.ceil(self.pitch_top)))
-        p_lo = max(LOWEST_PIANO_KEY, int(math.floor(self.u_of(r.bottom))))
+        p_hi = min(HIGHEST_PIANO_KEY, math.ceil(self.pitch_top))
+        p_lo = max(LOWEST_PIANO_KEY, math.floor(self.u_of(r.bottom)))
         for p in range(p_lo, p_hi + 1):
             y = int(self.y_of(p))
             pygame.draw.rect(s, ROW_BLACK if is_black_key(p) else ROW_WHITE, (r.x, y, r.w, int(rh) + 1))
@@ -1251,8 +1249,8 @@ class FingeringEditor(Transport):
         pygame.draw.rect(s, (18, 18, 22), g)
         s.set_clip(g)
         sounding = self.keys_down()
-        p_hi = min(HIGHEST_PIANO_KEY, int(math.ceil(self.pitch_top)))
-        p_lo = max(LOWEST_PIANO_KEY, int(math.floor(self.u_of(g.bottom))))
+        p_hi = min(HIGHEST_PIANO_KEY, math.ceil(self.pitch_top))
+        p_lo = max(LOWEST_PIANO_KEY, math.floor(self.u_of(g.bottom)))
         for p in range(p_lo, p_hi + 1):
             y = int(self.y_of(p))
             h = max(1, int(self.y_of(p - 1)) - y)
@@ -1322,7 +1320,7 @@ class FingeringEditor(Transport):
         state = "Playing" if not self.paused else "Paused"
         info = (
             f"{state}   {format_time(self.t, True)} / {format_time(self.song.duration)}    "
-            f"speed {int(round(self.speed * 100))}%    view {self.view_secs:.1f}s    {self.midi.status()}"
+            f"speed {round(self.speed * 100)}%    view {self.view_secs:.1f}s    {self.midi.status()}"
         )
         img = self.fonts["small"].render(info, True, TEXT_DIM)
         if x + img.get_width() < self._buttons_left:

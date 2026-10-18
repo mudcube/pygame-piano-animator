@@ -26,7 +26,6 @@ import glob
 import json
 import os
 import re
-import sys
 import time
 from multiprocessing import Pool
 
@@ -125,7 +124,7 @@ def _piece_scores(args):
     p = pianist.default_pianist()
     out = []
     for i in idx:
-        pid, hands, context, refs = _DATA[i]
+        _pid, hands, context, refs = _DATA[i]
         ours = {}
         for h, ns in hands:
             if ns:

@@ -22,21 +22,20 @@ import math
 import pygame
 
 import pianist as pianists
+import skins
 from common import ACCENT, BAR_BG, BG, PANEL, PANEL_EDGE, TEXT, TEXT_DIM, TOP_BAR_H, Button, Dialog, Slider, TextInput, mix
 from hands import (
-    HOVER,
     INCHES_PER_UNIT,
     WHITE_DEPTH_IN,
     WHITE_KEY_IN,
     HandGeometry,
     bone_width,
+    curl_factor,
     halo_for,
     joint_radius,
     static_skeleton,
-    curl_factor,
 )
 from midi_loader import is_black_key, note_name
-import skins
 
 PANEL_W = 380
 ROW_H = 56
@@ -120,7 +119,7 @@ def fit_view(skel, rect, margin=0.9):
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
 
     def to_screen(p):
-        return (int(round(rect.centerx + (p[0] - cx) * sc)), int(round(rect.centery - (p[1] - cy) * sc)))
+        return (round(rect.centerx + (p[0] - cx) * sc), round(rect.centery - (p[1] - cy) * sc))
 
     return to_screen, sc
 
@@ -426,13 +425,13 @@ class PianistStudio:
 
             def setter(v, i=i):
                 c = self._skin()["colors"][self._skin()["style"]][self._slot()]
-                c[i] = int(round(v))
+                c[i] = round(v)
                 if self._skin()["style"] == "skeleton":
                     self.work.color = tuple(c)
                 self.dirty = True
 
             tint = [(220, 70, 70), (80, 190, 90), (80, 130, 230)][i]
-            self.sliders.append(Slider(ch, 0, 255, col[i], setter, fmt=lambda v: str(int(round(v))), color=tint, step=1))
+            self.sliders.append(Slider(ch, 0, 255, col[i], setter, fmt=lambda v: str(round(v)), color=tint, step=1))
 
         def set_opt(key):
             def f(v):
@@ -447,7 +446,7 @@ class PianistStudio:
                 *skins.FINGER_WIDTH_RANGE,
                 sk["finger_width"],
                 set_opt("finger_width"),
-                fmt=lambda v: f"{int(round(v * 100))}%",
+                fmt=lambda v: f"{round(v * 100)}%",
             )
         )
         self.sliders.append(
@@ -462,7 +461,7 @@ class PianistStudio:
 
     def _appearance_rects(self):
         """[(action, label, rect, active, color)] for the skin chips, colour slots and toggles."""
-        body, panel, view = self._geom()
+        _body, panel, _view = self._geom()
         x0, w0 = panel.x + 20, panel.w - 40
         y = panel.y + 40
         out = []
@@ -509,7 +508,7 @@ class PianistStudio:
 
             return set_
 
-        pct = lambda v: f"{int(round(v * 100))}% of default"
+        pct = lambda v: f"{round(v * 100)}% of default"
         self.g_mc = Slider(
             "All metacarpals",
             pianists.BONE_MIN,
@@ -543,7 +542,7 @@ class PianistStudio:
                 d * pianists.BONE_MAX,
                 self.work.anatomy[b],
                 set_bone,
-                fmt=lambda v: f"{_cm(v):.2f} cm  ({int(round(v / d * 100))}%)",
+                fmt=lambda v: f"{_cm(v):.2f} cm  ({round(v / d * 100)}%)",
                 lo_label=f"{_cm(d * pianists.BONE_MIN):.1f} cm",
                 hi_label=f"{_cm(d * pianists.BONE_MAX):.1f} cm",
             )
@@ -587,7 +586,7 @@ class PianistStudio:
 
     def _buttons(self):
         """The clickable buttons of the current page: [(Button)] with rects set."""
-        body, panel, view = self._geom()
+        _body, panel, _view = self._geom()
         bs = []
         x0, w0 = panel.x + 20, panel.w - 40
 
@@ -598,7 +597,7 @@ class PianistStudio:
             bs.append(b)
             return b
 
-        W, H = self.screen.get_size()
+        _W, H = self.screen.get_size()
         bs_top = Button("← Menu" if self.page == "browser" else "← Pianists", "back", font="small")
         bs_top.rect = pygame.Rect(8, 5, 110, TOP_BAR_H - 10)
         bs.append(bs_top)
@@ -659,7 +658,7 @@ class PianistStudio:
         return bs
 
     def _browser_rects(self):
-        body, panel, view = self._geom()
+        _body, _panel, _view = self._geom()
         W, H = self.screen.get_size()
         left = pygame.Rect(0, TOP_BAR_H, min(470, W // 2 - 60), H - TOP_BAR_H)
         search = pygame.Rect(left.x + 16, left.y + 64, left.w - 32, 38)
@@ -688,12 +687,12 @@ class PianistStudio:
         return TOP_BAR_H + 20 + 30 + 3 * 60 + 70
 
     def _behavior_list_rects(self):
-        body, panel, view = self._geom()
+        _body, _panel, _view = self._geom()
         x, y = 20, TOP_BAR_H + 16
         out = []
         group = None
         self._group_labels = []
-        W, H = self.screen.get_size()
+        _W, H = self.screen.get_size()
         n = len(pianists.BEHAVIORS)
         groups = len({b["group"] for b in pianists.BEHAVIORS})
         step = max(24, min(34, int((H - y - 16 - groups * 26) / n)))
@@ -952,7 +951,7 @@ class PianistStudio:
     # browser ---------------------------------------------------------------------------
     def _draw_browser(self, s):
         r = self._browser_rects()
-        body, panel, view = self._geom()
+        _body, panel, _view = self._geom()
         self._panel(s, r["left"])
         pygame.draw.line(s, (50, 50, 62), r["left"].topright, r["left"].bottomright)
         self.search.rect = r["search"]
@@ -1004,7 +1003,7 @@ class PianistStudio:
         x, y = panel.x + 20, panel.y + 20
         s.blit(f["big"].render(p.name, True, TEXT), (x, y))
         y += 48
-        span, label, size = self.info(p)
+        _span, label, size = self.info(p)
         lines = [
             ("Hand", f"{size}, spans {'an' if label[0] in 'aeiou' else 'a'} {label}"),
             ("Chromatic", self._opt_label(p, "chromatic")),
@@ -1042,7 +1041,7 @@ class PianistStudio:
         return to_screen, sc
 
     def _draw_overview(self, s):
-        body, panel, view = self._geom()
+        _body, panel, view = self._geom()
         pygame.draw.rect(s, (28, 28, 35), view)
         self._draw_hand_view(s, view.inflate(-40, -40), self.shape)
         cap = "Stretched out" if self.shape == "stretched" else "Natural resting curve"
@@ -1084,7 +1083,7 @@ class PianistStudio:
 
     # anatomy ------------------------------------------------------------------------------
     def _draw_anatomy(self, s):
-        body, panel, view = self._geom()
+        _body, panel, view = self._geom()
         pygame.draw.rect(s, (28, 28, 35), view)
         f = self.fonts
         if self.span_view:
@@ -1176,7 +1175,7 @@ class PianistStudio:
         def to_screen(p):
             dx, dy = p[0] - t1[0], p[1] - t1[1]
             rx, ry = dx * ca - dy * sa, dx * sa + dy * ca
-            return (int(round(ox + rx * S)), int(round(oy - ry * S)))
+            return (round(ox + rx * S), round(oy - ry * S))
 
         pinky_x = to_screen(t5)[0]
         reached = max((p for p, r in keys.items() if not is_black_key(p) and r.centerx <= pinky_x + 0.25 * ww), default=60)
@@ -1210,7 +1209,7 @@ class PianistStudio:
     # behaviour ------------------------------------------------------------------------------
     def _draw_behavior(self, s):
         f = self.fonts
-        W, H = s.get_size()
+        _W, _H = s.get_size()
         mouse = pygame.mouse.get_pos()
         lst = self._behavior_list_rects()
         for group, pos in self._group_labels:

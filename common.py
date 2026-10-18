@@ -100,9 +100,9 @@ def bottom_layout(size):
     budget = BOTTOM_MAX_SHARE * h
     if ww * (KEY_LEN_WW + HAND_LEN_WW) > budget:
         ww = budget / (KEY_LEN_WW + HAND_LEN_WW)
-    kb_w = int(round(ww * 52))
-    kb_h = int(round(ww * KEY_LEN_WW))
-    hand_h = max(int(round(ww * HAND_LEN_WW)), min(HAND_AREA_MIN_H, int(h * 0.2)))
+    kb_w = round(ww * 52)
+    kb_h = round(ww * KEY_LEN_WW)
+    hand_h = max(round(ww * HAND_LEN_WW), min(HAND_AREA_MIN_H, int(h * 0.2)))
     kb_x = (w - kb_w) // 2
     kb_y = h - hand_h - kb_h
     return pygame.Rect(kb_x, kb_y, kb_w, kb_h), pygame.Rect(0, kb_y + kb_h, w, hand_h)

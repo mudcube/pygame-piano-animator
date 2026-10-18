@@ -1,5 +1,6 @@
 """Loading, fingering, pedals and hand crossings - no window needed."""
 
+import itertools
 import math
 
 from conftest import midi_path
@@ -74,6 +75,7 @@ def test_given_fingers_are_kept():
 # ----- hands -------------------------------------------------------------------
 def test_hand_pose_is_finite():
     import pygame
+
     from common import Keyboard, bottom_layout
 
     pygame.init()
@@ -121,6 +123,7 @@ def test_repeated_chords_bounce_and_tremolo_rolls():
 
 def test_idle_hand_gets_out_of_the_way():
     import pygame
+
     from common import Keyboard, bottom_layout
 
     pygame.init()
@@ -149,7 +152,7 @@ def test_idle_hand_gets_out_of_the_way():
     an = {h: hands.HandAnimator(s, h) for h in (RIGHT, LEFT)}
     hands.pair_hands(an.values())
     xs = []
-    for i in range(0, 8 * 30):
+    for i in range(8 * 30):
         t = i / 30
         x = {h: a.pose(t, kb)["wrist"][0] for h, a in an.items()}
         lx = 2 * an[LEFT].axis_x - x[LEFT]  # back from the mirrored frame
@@ -157,13 +160,15 @@ def test_idle_hand_gets_out_of_the_way():
         if 1.8 <= t <= 6.0:  # left hand idle: never crossed
             assert x[RIGHT] - lx > 0.6 * kb.white_w / 0.9 * hands.hand_span_inches()
     # it follows smoothly and is back on its chord in time
-    assert max(abs(b - a) for a, b in zip(xs, xs[1:])) < 30
+    assert max(abs(b - a) for a, b in itertools.pairwise(xs)) < 30
     assert abs(xs[int(7.0 * 30)] - xs[int(0.3 * 30)]) < 0.3 * kb.white_w
 
 
 def test_fingers_stay_on_their_keys():
     import bisect
+
     import pygame
+
     from common import Keyboard, bottom_layout
 
     pygame.init()
@@ -221,8 +226,8 @@ def test_held_key_is_let_go_before_a_leap():
 
 
 def test_hand_split_keeps_to_the_top_speed():
-    import hand_split
     import fingering as F
+    import hand_split
 
     # Liszt-style alternation (Dante Sonata): repeated high chords for the
     # right hand, low and middle chords for the left, ~0.11 s apart. The left
@@ -242,7 +247,7 @@ def test_hand_split_keeps_to_the_top_speed():
     for h in (LEFT, RIGHT):
         mine = sorted((n for n in ns if split[id(n)] == h), key=lambda n: n.start)
         groups = F.group_notes(mine)
-        for (t0, a), (t1, b) in zip(groups, groups[1:]):
+        for (t0, a), (t1, b) in itertools.pairwise(groups):
             wk = lambda ps: (F.key_pos(max(ps)) - hand_split.HAND_WK, F.key_pos(min(ps)))
             ra, rb = wk([n.pitch for n in a]), wk([n.pitch for n in b])
             gap = max(0.0, rb[0] - ra[1], ra[0] - rb[1])
@@ -251,7 +256,9 @@ def test_hand_split_keeps_to_the_top_speed():
 
 def test_hands_keep_to_the_top_speed_and_play_what_they_do():
     import math
+
     import pygame
+
     import fingering as F
     from common import Keyboard, Performance, bottom_layout
 
@@ -326,6 +333,7 @@ def _chromatic_octaves(velocity):
 
 def test_chromatic_octaves_play_white_keys_up_among_the_black_ones():
     import pygame
+
     from common import Keyboard, bottom_layout
 
     pygame.init()
@@ -344,12 +352,13 @@ def test_chromatic_octaves_play_white_keys_up_among_the_black_ones():
         if not n.is_black:
             assert a.white_up[id(n)] == 1.0
             assert a.key_target(n.pitch, 5, n)[1] > front  # past the black keys' front
-    travel = sum(abs(b - c) for b, c in zip(ys, ys[1:])) / 3.5
+    travel = sum(abs(b - c) for b, c in itertools.pairwise(ys)) / 3.5
     assert travel < 4.0  # in/s in and out (it was ~8 before)
 
 
 def test_loud_notes_are_played_near_the_front_of_the_keys():
     import pygame
+
     import pianist
     from common import Keyboard, bottom_layout
 
@@ -381,7 +390,9 @@ def test_loud_notes_are_played_near_the_front_of_the_keys():
 
 def test_fingers_aim_where_they_are_going_without_snapping():
     import math
+
     import pygame
+
     from common import Keyboard, bottom_layout
 
     pygame.init()
@@ -390,7 +401,7 @@ def test_fingers_aim_where_they_are_going_without_snapping():
     a._ensure_layout(kb)
     wx, wy, psi = 500.0, -60.0, 0.0
     blx, bly, blz = a.base_local[2]
-    hmin, hmax = a._reach_range(2, blz - 20.0, 0.99)
+    _hmin, hmax = a._reach_range(2, blz - 20.0, 0.99)
     # a target within reach but 60 degrees out, far past the index finger's
     # splay: it is brought to the nearest point on the limit's line, not
     # swung round at full length (the old clamp: 0.9 of the reach)
@@ -404,7 +415,7 @@ def test_fingers_aim_where_they_are_going_without_snapping():
     for p in (62, 64, 66, 68):
         for f in (2, 3, 4, 5):
             ys = [a._key_spot(p, f, (kx - 300 + i * 0.5, wy, psi))[1] for i in range(1200)]
-            assert max(abs(b - c) for b, c in zip(ys, ys[1:])) < 0.3 * a.ppi
+            assert max(abs(b - c) for b, c in itertools.pairwise(ys)) < 0.3 * a.ppi
 
 
 def test_a_held_middle_voice_stays_down_under_moving_octaves():

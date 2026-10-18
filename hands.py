@@ -42,6 +42,7 @@ an octave up); that makes it about 7.6 in from wrist to middle fingertip.
 from __future__ import annotations
 
 import bisect
+import itertools
 import math
 
 from fingering import group_notes, is_crossing, key_pos, mirror_pitch, plan_fingering
@@ -466,7 +467,7 @@ def solve_chain(base, target, lengths, bulge, coupling, bend_max):
 # Animation
 # --------------------------------------------------------------------------- #
 def _clamp(x, lo, hi):
-    return lo if x < lo else hi if x > hi else x
+    return lo if x < lo else min(x, hi)
 
 
 def _solve3(A, b):
@@ -548,7 +549,7 @@ class HandAnimator:
 
         self.pair_key = {}
         for _, ns in self.groups:
-            for a, b in zip(ns, ns[1:]):
+            for a, b in itertools.pairwise(ns):
                 f = self.fingering[id(a)]
                 if f == self.fingering[id(b)] and double_ok(self.vp(a.pitch), self.vp(b.pitch), f):
                     pk = (min(a.pitch, b.pitch), max(a.pitch, b.pitch))
@@ -1787,9 +1788,9 @@ class HandAnimator:
         raw = self._hand_at(t)[0]
         span = self.geo.span_units() * self.S
         i1 = math.floor(t / IDLE_TICK_T)
-        ticks = range(i1 - int(round(IDLE_TRAIL_T / IDLE_TICK_T)), i1 + 1)
+        ticks = range(i1 - round(IDLE_TRAIL_T / IDLE_TICK_T), i1 + 1)
         trail = sum(self._partner_x(i) for i in ticks) / len(ticks)
-        lo = self._clear_line(int(round(t / IDLE_GRID_T))) + IDLE_CLEAR_SPAN * span
+        lo = self._clear_line(round(t / IDLE_GRID_T)) + IDLE_CLEAR_SPAN * span
         hi = max(lo, trail + IDLE_FAR_SPAN * span)
         target = min(max(raw, lo), hi)
         if target > raw:  # stay on the keyboard
@@ -1804,7 +1805,7 @@ class HandAnimator:
             if len(self._path_cache) > 20000:
                 self._path_cache.clear()
             p = self.partner
-            x = self._path_cache[i] = self._mx(p._mx(p._grid_pose(int(round(i * IDLE_TICK_T / HAND_GRID_T)))[0]))
+            x = self._path_cache[i] = self._mx(p._mx(p._grid_pose(round(i * IDLE_TICK_T / HAND_GRID_T))[0]))
         return x
 
     def _clear_line(self, k):
@@ -2055,7 +2056,7 @@ class HandAnimator:
             bones.append((p, (p[0] + back[0] * fl, p[1] + back[1] * fl, p[2] + 0.5 * S), "forearm"))
         # Carpals: a ring from the wrist through the metacarpal bases.
         ring = [wr, cmc, bases[2], bases[3], bases[4], bases[5], wu]
-        for a, b in zip(ring, ring[1:]):
+        for a, b in itertools.pairwise(ring):
             bones.append((a, b, "carpal"))
         bones.append((wr, wu, "carpal"))
 
@@ -2065,7 +2066,7 @@ class HandAnimator:
             bones.append((bases[f], mcp, "metacarpal"))
             pts = solve_chain(mcp, tips[f], [L * S for L in geo.bones[f]], up, FINGER_COUPLING, FINGER_BEND_MAX)
             chains[f] = [bases[f]] + list(pts)
-            for (a, b), kind in zip(zip(pts, pts[1:]), ("proximal", "middle", "distal")):
+            for (a, b), kind in zip(itertools.pairwise(pts), ("proximal", "middle", "distal")):
                 bones.append((a, b, kind))
             joints += [(p, "knuckle") for p in pts[:3]] + [(pts[3], "tip")]
 
@@ -2074,7 +2075,7 @@ class HandAnimator:
         bulge = (out[0] * 0.85, out[1] * 0.85, 0.5)
         pts = solve_chain(cmc, tips[1], [L * S for L in geo.bones[1]], bulge, THUMB_COUPLING, THUMB_BEND_MAX)
         chains[1] = list(pts)
-        for (a, b), kind in zip(zip(pts, pts[1:]), ("metacarpal", "proximal", "distal")):
+        for (a, b), kind in zip(itertools.pairwise(pts), ("metacarpal", "proximal", "distal")):
             bones.append((a, b, kind))
         joints += [(p, "knuckle") for p in pts[:3]] + [(pts[3], "tip")]
         joints += [(p, "wrist") for p in (wr, wu)]
@@ -2152,7 +2153,7 @@ def static_skeleton(geo, shape="stretched", curl=1.0):
     bones.append((wr, (wr[0] - 0.4, wr[1] - 6.0, wr[2] + 0.4), "forearm", None))
     bones.append((wu, (wu[0] + 0.4, wu[1] - 6.0, wu[2] + 0.4), "forearm", None))
     ring = [wr, cmc, base[2], base[3], base[4], base[5], wu]
-    for a, b in zip(ring, ring[1:]):
+    for a, b in itertools.pairwise(ring):
         bones.append((a, b, "carpal", None))
     bones.append((wr, wu, "carpal", None))
 
@@ -2163,7 +2164,7 @@ def static_skeleton(geo, shape="stretched", curl=1.0):
             pts = solve_chain(mcp, rest[f], list(geo.bones[f]), (0.0, 0.0, 1.0), FINGER_COUPLING, FINGER_BEND_MAX)
         else:
             pts = straight(mcp, splay[f], geo.bones[f], z_drop=mcp[2] - 0.3)
-        for (a, b), kind, bid in zip(zip(pts, pts[1:]), ("proximal", "middle", "distal"), (f"pp{f}", f"mp{f}", f"dp{f}")):
+        for (a, b), kind, bid in zip(itertools.pairwise(pts), ("proximal", "middle", "distal"), (f"pp{f}", f"mp{f}", f"dp{f}")):
             bones.append((a, b, kind, bid))
         joints += [(base[f], "knuckle")] + [(p, "knuckle") for p in pts[:3]] + [(pts[3], "tip")]
         tips[f] = pts[3]
@@ -2173,7 +2174,7 @@ def static_skeleton(geo, shape="stretched", curl=1.0):
         pts = solve_chain(cmc, rest[1], list(geo.bones[1]), bulge, THUMB_COUPLING, THUMB_BEND_MAX)
     else:
         pts = straight(cmc, splay[1], geo.bones[1], z_drop=cmc[2] - 0.3)
-    for (a, b), kind, bid in zip(zip(pts, pts[1:]), ("metacarpal", "proximal", "distal"), ("mc1", "pp1", "dp1")):
+    for (a, b), kind, bid in zip(itertools.pairwise(pts), ("metacarpal", "proximal", "distal"), ("mc1", "pp1", "dp1")):
         bones.append((a, b, kind, bid))
     joints += [(p, "knuckle") for p in pts[:3]] + [(pts[3], "tip")]
     joints += [(wr, "wrist"), (wu, "wrist")]
@@ -2205,11 +2206,11 @@ def depth_scale(z, ppi):
 
 
 def bone_width(kind, z, ppi):
-    return max(2, int(round(BONE_WIDTH_IN[kind] * ppi * depth_scale(z, ppi))))
+    return max(2, round(BONE_WIDTH_IN[kind] * ppi * depth_scale(z, ppi)))
 
 
 def joint_radius(kind, z, ppi):
-    return max(2, int(round(JOINT_RADIUS_IN[kind] * ppi * depth_scale(z, ppi))))
+    return max(2, round(JOINT_RADIUS_IN[kind] * ppi * depth_scale(z, ppi)))
 
 
 def draw_hand(surf, pose):
@@ -2442,7 +2443,7 @@ def draw_skeletons(surf, poses):
     fy, ppi = poses[0]["front_y"], poses[0]["ppi"]
 
     def scr(p):
-        return (int(round(p[0])), int(round(fy - p[1])))
+        return (round(p[0]), round(fy - p[1]))
 
     try:
         from skins import draw_webs

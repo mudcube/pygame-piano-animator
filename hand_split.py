@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import math
 
-from fingering import key_pos, travel_time, MOVE_SHARE
+from fingering import MOVE_SHARE, key_pos, travel_time
 
 LEFT, RIGHT = "L", "R"
 
@@ -80,7 +80,7 @@ def _groups(notes):
 class _Hand:
     """A hand's recent history along one candidate path (immutable-ish)."""
 
-    __slots__ = ("center", "last_t", "last_lo", "last_hi", "held")
+    __slots__ = ("center", "held", "last_hi", "last_lo", "last_t")
 
     def __init__(self, center, last_t=-math.inf, last_lo=None, last_hi=None, held=()):
         self.center = center  # where the hand is, in semitones
