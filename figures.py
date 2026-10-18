@@ -259,7 +259,7 @@ CHROM_MAPS = {
 
 def _chrom_groups4(lo, hi):
     """{pitch: finger} for 'groups of up to four': thumbs on white keys, as far apart as possible."""
-    out, f, p = {}, 1, lo
+    out, p = {}, lo
     out[p] = 1
     while p < hi:
         # the next thumb: the furthest white key at most four notes on
@@ -317,10 +317,13 @@ def _start_thumb(ps, f, hand, rule, cmap):
     for i, v in enumerate(vps):
         if v == lo:
             f[i] = 1
-        elif rule == "renumber" and lo < v:
-            # count up from the thumb until the map's next thumb
-            if all(cmap[(q if hand == RIGHT else 124 - q) % 12] != 1 for q in range(lo + 1, v + 1)):
-                f[i] = v - lo + 1 if v - lo + 1 <= 5 else f[i]
+        # count up from the thumb until the map's next thumb
+        elif (
+            rule == "renumber"
+            and lo < v
+            and all(cmap[(q if hand == RIGHT else 124 - q) % 12] != 1 for q in range(lo + 1, v + 1))
+        ):
+            f[i] = v - lo + 1 if v - lo + 1 <= 5 else f[i]
 
 
 # ----------------------------------------------------------------- arpeggios
@@ -740,9 +743,14 @@ def _stepwise(notes, ps, ts, hand, context, put):
             # ends on the next finger, not on a thumb out on its own
             nxt = seg[b[-1]] + 1
             ends_open = nxt >= n or abs(ps[nxt] - bp[-1]) > 2
-            if ends_open and len(fs) > 1 and fs[-1] == 1 and fs[-2] in (3, 4):
-                if (hand == RIGHT and bp[-1] > bp[-2]) or (hand == LEFT and bp[-1] < bp[-2]):
-                    fs[-1] = fs[-2] + 1
+            if (
+                ends_open
+                and len(fs) > 1
+                and fs[-1] == 1
+                and fs[-2] in (3, 4)
+                and ((hand == RIGHT and bp[-1] > bp[-2]) or (hand == LEFT and bp[-1] < bp[-2]))
+            ):
+                fs[-1] = fs[-2] + 1
             for q, f in zip(b, fs):
                 put(notes[seg[q]], f, W_SCALE)
 

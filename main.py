@@ -185,7 +185,7 @@ class Visualizer(Transport):
         show_loading(self.screen, self.fonts, f"Loading {os.path.basename(path)}…")
         try:
             self.set_song(load_song(path))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any unreadable file is reported, not fatal
             print(f"Could not load {path}: {exc}")
 
     def leave(self):
@@ -441,7 +441,7 @@ class App:
         show_loading(self.screen, self.fonts, f"Loading {os.path.basename(path)}…")
         try:
             song = load_song(path)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any unreadable file is reported, not fatal
             print(f"Could not load {path}: {exc}")
             if isinstance(self.mode, MainMenu):
                 self.mode.message = f"Could not open {os.path.basename(path)}: {exc}"

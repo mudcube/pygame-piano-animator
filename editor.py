@@ -81,6 +81,7 @@ from common import (
     mix,
     pick_file,
     save_file_dialog,
+    show_loading,
 )
 from fingering import CHORD_TOL, group_notes, mirror_pitch, plan_fingering, score_fingering
 from hands import HandAnimator, draw_hands, pair_hands
@@ -634,7 +635,7 @@ class FingeringEditor(Transport):
                 count = save_pig(path if is_pig(path) else os.path.splitext(path)[0] + ".txt", self.notes, fing)
             else:
                 count = save_fingered_midi(self.song.path, path, self.notes, fing)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any export failure is shown to the user
             self.say(f"Export failed: {exc}")
             return False
         self.dirty = False
@@ -654,7 +655,7 @@ class FingeringEditor(Transport):
         try:
             self.load_song(load_song(path))
             self.app.last_dir = os.path.dirname(os.path.abspath(path))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any unreadable file is reported, not fatal
             self.say(f"Could not open {os.path.basename(path)}: {exc}")
         return True
 

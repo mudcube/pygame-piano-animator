@@ -1625,7 +1625,7 @@ class HandAnimator:
         fit = [(t, r, w * k) for (t, r, w, _), k in zip(fit, keep)]
         q = list(self._fit_hand(fit))
 
-        rot, S = self._rot, self.S
+        S = self.S
         dev_lo, dev_hi = (math.radians(a) for a in WRIST_DEV_DEG)
         arm = 3.0 * S
         wsum = sum(w for _, _, w in fit)

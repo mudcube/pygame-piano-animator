@@ -643,7 +643,7 @@ def plan_fingering(
         given = [fixed.get(id(n)) if fixed is not None else getattr(n, "finger", None) for n in ns]
         sug = [suggest.get(id(n)) for n in ns]
 
-        def chord_costs(states):
+        def chord_costs(states, ps=ps, sug=sug):
             local = []
             for st in states:
                 c = sum(unary_cost(p, f) for p, f in zip(ps, st))

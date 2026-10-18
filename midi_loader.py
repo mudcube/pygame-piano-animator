@@ -300,7 +300,8 @@ def read_markers(path: str) -> dict:
     """{(tick, pitch): (hand or None, finger or None)} for every marked note-on."""
     out = {}
     try:
-        _, chunks = _chunks(open(path, "rb").read())
+        with open(path, "rb") as handle:
+            _, chunks = _chunks(handle.read())
         for typ, td in chunks:
             if typ != b"MTrk":
                 continue
@@ -314,7 +315,7 @@ def read_markers(path: str) -> dict:
                     if pending:
                         out[(t, p[1])] = pending
                     pending = None
-    except Exception:  # unreadable/odd file: just no fingering
+    except Exception:  # noqa: BLE001 - unreadable/odd file: just no fingering
         return {}
     return out
 
@@ -364,7 +365,8 @@ def save_fingered_midi(src_path: str, dst_path: str, notes, fingers) -> int:
     `notes` are the loaded Note objects (with the hand to store) and `fingers`
     maps id(note) -> finger (or None). Returns how many notes were marked.
     """
-    header, chunks = _chunks(open(src_path, "rb").read())
+    with open(src_path, "rb") as handle:
+        header, chunks = _chunks(handle.read())
     to_sec = _tempo_map(header, chunks)
     # loaded notes by (pitch, start in ms); the loader shifts out-of-range
     # pitches by octaves, so look them up the same way
@@ -470,7 +472,7 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
     try:
         bar_times = [float(t) for t in pm.get_downbeats()]
         beat_times = [float(t) for t in pm.get_beats()]
-    except Exception:  # odd time-signature data; bar lines are only cosmetic
+    except Exception:  # noqa: BLE001 - odd time-signature data; bar lines are only cosmetic
         bar_times, beat_times = [], []
 
     controls = []

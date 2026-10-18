@@ -209,7 +209,7 @@ class MidiOut:
                 self.port = pygame.midi.Output(device)
                 for ch in (0, 1):
                     self.port.set_instrument(0, ch)  # acoustic grand piano
-        except Exception as exc:  # no synth available: run silently
+        except Exception as exc:  # noqa: BLE001 - no synth available: run silently
             print(f"Sound disabled ({exc})")
             self.port = None
 
@@ -412,7 +412,7 @@ def _tk_root():
     root.withdraw()
     try:
         root.attributes("-topmost", True)  # open in front of the pygame window
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - optional window hint; Tk builds differ
         pass
     return root
 
@@ -426,7 +426,7 @@ def pick_file(title="Open MIDI file", initialdir=None):
         path = filedialog.askopenfilename(parent=root, title=title, filetypes=_MIDI_TYPES, initialdir=initialdir or None)
         root.destroy()
         return path or ""
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - no file dialog here: carry on without one
         print(f"File dialog unavailable ({exc})")
         return ""
     finally:
@@ -449,7 +449,7 @@ def save_file_dialog(title="Export MIDI file", initialdir=None, initialfile=None
         )
         root.destroy()
         return path or ""
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - no file dialog here: carry on without one
         print(f"File dialog unavailable ({exc})")
         return ""
     finally:
@@ -460,7 +460,7 @@ def _after_dialog():
     # Clicks and key presses made in the dialog must not reach the app.
     try:
         pygame.event.clear()
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - nothing to clear when pygame has no event queue
         pass
 
 
@@ -664,7 +664,7 @@ class TextInput:
         self.focus = on
         try:
             (pygame.key.start_text_input if on else pygame.key.stop_text_input)()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 - text input is optional on some SDL builds
             pass
 
     def handle_event(self, event):
@@ -734,5 +734,5 @@ def show_loading(surf, fonts, text):
         surf.blit(img, img.get_rect(center=box.center))
         pygame.display.flip()
         pygame.event.pump()
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - the loading card is cosmetic; never block the load on it
         pass

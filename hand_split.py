@@ -200,7 +200,7 @@ def _fit_spans(pianist):
             from hands import hand_span_inches
 
             k = hand_span_inches(pianist.anatomy) / hand_span_inches(None)
-        except Exception:
+        except Exception:  # noqa: BLE001 - no pianist data: use the default spans
             k = 1.0
     SPAN_FREE, SPAN_MAX, SPAN_HELD_MAX = (v * k for v in _BASE_SPANS)
 
@@ -219,7 +219,7 @@ def split_hands(notes, pianist=None):
             import pianist as pianists
 
             pianist = pianists.active()
-        except Exception:
+        except Exception:  # noqa: BLE001 - no pianist data: use the default spans
             pianist = None
     _fit_spans(pianist)
     global MAX_SPEED

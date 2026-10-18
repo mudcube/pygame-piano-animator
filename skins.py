@@ -70,7 +70,7 @@ def normalize(d, bone_color=None):
                 if slot in out["colors"][style]:
                     try:
                         out["colors"][style][slot] = [max(0, min(255, int(v))) for v in c][:3]
-                    except Exception:
+                    except Exception:  # noqa: BLE001, S110 - a malformed colour keeps the default
                         pass
     for k, v in OPTIONS.items():
         if k in d:
@@ -160,7 +160,7 @@ class _Pen:
             import pygame.gfxdraw as gfx
 
             self.gfx = gfx
-        except Exception:
+        except Exception:  # noqa: BLE001 - gfxdraw is optional
             self.gfx = None
 
     def circle(self, c, r, color):

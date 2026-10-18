@@ -978,7 +978,7 @@ class PianistStudio:
             pygame.draw.circle(s, p.badge_color, (row.x + 22, row.centery), 10)
             pygame.draw.circle(s, (150, 150, 160), (row.x + 22, row.centery), 10, 1)
             s.blit(f["normal"].render(p.name, True, TEXT), (row.x + 44, row.y + 6))
-            span, label, size = self.info(p)
+            _span, label, size = self.info(p)
             sub = f"{size} hand  ·  {label}" + ("  ·  built in" if p.builtin else "")
             s.blit(f["small"].render(sub, True, TEXT_DIM), (row.x + 44, row.y + 29))
             if p.id == act:

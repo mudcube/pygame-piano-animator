@@ -637,7 +637,7 @@ def list_pianists():
             try:
                 with open(_path(pid), encoding="utf-8") as fh:
                     out.append(Pianist.from_json(pid, json.load(fh)))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - a broken pianist file is skipped, not fatal
                 print(f"Skipping pianist file {fn}: {exc}")
     return out
 
@@ -648,7 +648,7 @@ def load(pid):
     try:
         with open(_path(pid), encoding="utf-8") as fh:
             return Pianist.from_json(pid, json.load(fh))
-    except Exception:
+    except Exception:  # noqa: BLE001 - a broken pianist file falls back to the default
         return default_pianist()
 
 
@@ -704,7 +704,7 @@ def active():
         try:
             with open(SETTINGS, encoding="utf-8") as fh:
                 pid = json.load(fh).get("active", DEFAULT_ID)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 - no saved choice: use the default pianist
             pass
         _active = load(pid)
     return _active
@@ -717,5 +717,5 @@ def set_active(p):
         os.makedirs(FOLDER, exist_ok=True)
         with open(SETTINGS, "w", encoding="utf-8") as fh:
             json.dump({"active": p.id}, fh)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - saving the choice is best effort
         print(f"Couldn't save the active pianist ({exc})")
