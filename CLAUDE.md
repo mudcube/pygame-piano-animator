@@ -72,3 +72,15 @@ gestures, editor state after scripted keys). Keep tests fast and free of local d
   personal `pianists/` files; `.gitignore` covers them.
 - Windows is the main target (the author's machine); paths go through `os.path`, and file
   dialogs use tkinter.
+
+<!-- butterboard-task-authority:start -->
+
+## Current work lives in Butterboard
+
+Tasks for `pygame-piano-animator` live in Butterboard. Before working on them, run `butterboard guide`
+in this repository and follow it (without the `butterboard` command, run
+`node /Users/mikomeow/projects/butterboard/execution/task-cli.mjs guide`). Miko authorizes you to manage this project's tasks with its key.
+
+Board: https://butterboard.butter/pygame-piano-animator
+
+<!-- butterboard-task-authority:end -->
