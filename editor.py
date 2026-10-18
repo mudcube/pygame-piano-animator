@@ -42,6 +42,7 @@ stored as a text event ("R3", "L1", ...) right before the note; everything
 else in the file is kept as it was. Loading such a file restores the hands
 and fingers exactly.
 """
+
 from __future__ import annotations
 
 import math
@@ -50,38 +51,90 @@ from dataclasses import replace
 
 import pygame
 
-from common import (ACCENT, BAR_BG, BG, FELT_H, FINGER_NAMES, HAND_COLORS, HAND_NAMES,
-                    LEAD_IN, PANEL, PANEL_EDGE, TEXT, TEXT_DIM, TOP_BAR_H, Button, Dialog,
-                    Keyboard, Performance, Transport, bottom_layout, default_export_name,
-                    draw_felt, draw_hand_area, draw_pianist_badge, format_time, mix, pick_file,
-                    save_file_dialog)
+from common import (
+    ACCENT,
+    BAR_BG,
+    BG,
+    FELT_H,
+    FINGER_NAMES,
+    HAND_COLORS,
+    HAND_NAMES,
+    LEAD_IN,
+    PANEL,
+    PANEL_EDGE,
+    TEXT,
+    TEXT_DIM,
+    TOP_BAR_H,
+    Button,
+    Dialog,
+    Keyboard,
+    Performance,
+    Transport,
+    bottom_layout,
+    default_export_name,
+    draw_felt,
+    draw_hand_area,
+    draw_pianist_badge,
+    format_time,
+    mix,
+    pick_file,
+    save_file_dialog,
+)
 import pianist as pianists
 from fingering import CHORD_TOL, group_notes, mirror_pitch, plan_fingering, score_fingering
 from hands import HandAnimator, draw_hands, pair_hands
-from midi_loader import (HIGHEST_PIANO_KEY, LEFT, LOWEST_PIANO_KEY, RIGHT, MidiSong,
-                         is_black_key, is_pig, load_song, note_name, save_fingered_midi,
-                         save_pig)
+from midi_loader import (
+    HIGHEST_PIANO_KEY,
+    LEFT,
+    LOWEST_PIANO_KEY,
+    RIGHT,
+    MidiSong,
+    is_black_key,
+    is_pig,
+    load_song,
+    note_name,
+    save_fingered_midi,
+    save_pig,
+)
 
-INFO_H = 24                  # status line under the top bar
-RULER_H = 20                 # bar numbers above the roll
-GUTTER_W = 46                # the sideways keyboard at the left of the roll
-PLAYHEAD_FRAC = 0.3          # where "now" sits across the roll
-VIEW_SECS = 6.0              # seconds shown across the roll
+INFO_H = 24  # status line under the top bar
+RULER_H = 20  # bar numbers above the roll
+GUTTER_W = 46  # the sideways keyboard at the left of the roll
+PLAYHEAD_FRAC = 0.3  # where "now" sits across the roll
+VIEW_SECS = 6.0  # seconds shown across the roll
 VIEW_MIN, VIEW_MAX = 1.0, 60.0
-ROW_H = 12                   # pixels per semitone (default, when the song doesn't fit)
+ROW_H = 12  # pixels per semitone (default, when the song doesn't fit)
 ROW_MIN, ROW_MAX = 10, 30
-RESOLVE_PAD = 3.0            # seconds of fixed context around re-fingered notes
-DRAG_START = 4               # pixels before a press becomes a drag
+RESOLVE_PAD = 3.0  # seconds of fixed context around re-fingered notes
+DRAG_START = 4  # pixels before a press becomes a drag
 UNDO_LIMIT = 200
 
-SEQ_REBUILD_T = 0.35         # sequential mode: redo the hands once typing pauses this long
+SEQ_REBUILD_T = 0.35  # sequential mode: redo the hands once typing pauses this long
 # sequential fingering keys: hand + finger, laid out like the hands on the keyboard
-SEQ_KEYS = {pygame.K_m: (RIGHT, 1), pygame.K_k: (RIGHT, 2), pygame.K_o: (RIGHT, 3),
-            pygame.K_SEMICOLON: (RIGHT, 4), pygame.K_QUOTE: (RIGHT, 5),
-            pygame.K_v: (LEFT, 1), pygame.K_d: (LEFT, 2), pygame.K_w: (LEFT, 3),
-            pygame.K_a: (LEFT, 4), pygame.K_LSHIFT: (LEFT, 5)}
-SEQ_DIGITS = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5,
-              pygame.K_KP1: 1, pygame.K_KP2: 2, pygame.K_KP3: 3, pygame.K_KP4: 4, pygame.K_KP5: 5}
+SEQ_KEYS = {
+    pygame.K_m: (RIGHT, 1),
+    pygame.K_k: (RIGHT, 2),
+    pygame.K_o: (RIGHT, 3),
+    pygame.K_SEMICOLON: (RIGHT, 4),
+    pygame.K_QUOTE: (RIGHT, 5),
+    pygame.K_v: (LEFT, 1),
+    pygame.K_d: (LEFT, 2),
+    pygame.K_w: (LEFT, 3),
+    pygame.K_a: (LEFT, 4),
+    pygame.K_LSHIFT: (LEFT, 5),
+}
+SEQ_DIGITS = {
+    pygame.K_1: 1,
+    pygame.K_2: 2,
+    pygame.K_3: 3,
+    pygame.K_4: 4,
+    pygame.K_5: 5,
+    pygame.K_KP1: 1,
+    pygame.K_KP2: 2,
+    pygame.K_KP3: 3,
+    pygame.K_KP4: 4,
+    pygame.K_KP5: 5,
+}
 
 ROW_WHITE = (34, 34, 43)
 ROW_BLACK = (27, 27, 34)
@@ -107,8 +160,9 @@ def heat_color(d):
 
 
 def difficulty_word(d):
-    return ("easy" if d < 0.25 else "moderate" if d < 0.55 else "hard" if d < 1.0 else "very hard") + \
-        f" ({int(round(d * 100))})"
+    return (
+        "easy" if d < 0.25 else "moderate" if d < 0.55 else "hard" if d < 1.0 else "very hard"
+    ) + f" ({int(round(d * 100))})"
 
 
 # --------------------------------------------------------------------------- #
@@ -129,14 +183,19 @@ class ContextMenu:
         self.title, self.items, self.on_pick, self.fonts = title, items, on_pick, fonts
         self.bounds = pygame.Rect(bounds)
         self.hover = None
-        self.child = None                  # (parent index, ContextMenu) when a submenu is open
+        self.child = None  # (parent index, ContextMenu) when a submenu is open
         self.parent_value = None
         self.rect = self._place(pos)
 
     def _place(self, pos, flip_from=None):
         f = self.fonts
-        w = max([f["normal"].size(it.label)[0] + (f["small"].size(it.hint)[0] + 16 if it.hint else 0)
-                 for it in self.items] + [f["small"].size(self.title)[0] if self.title else 0]) + 58
+        w = (
+            max(
+                [f["normal"].size(it.label)[0] + (f["small"].size(it.hint)[0] + 16 if it.hint else 0) for it in self.items]
+                + [f["small"].size(self.title)[0] if self.title else 0]
+            )
+            + 58
+        )
         h = len(self.items) * self.ITEM_H + 2 * self.PAD + (22 if self.title else 0)
         r = pygame.Rect(pos[0], pos[1], w, h)
         if r.right > self.bounds.right:
@@ -159,11 +218,11 @@ class ContextMenu:
             return
         if self.child and self.child[0] == i:
             return
-        sub = ContextMenu((self.rect.right - 2, it.rect.y - self.PAD - 22), "Finger", it.children,
-                          None, self.fonts, self.bounds)
-        if sub.rect.x < self.rect.right - 2:          # no room on the right: open to the left
-            sub.rect = sub._place((self.rect.x - sub.rect.w + 2, it.rect.y - self.PAD - 22),
-                                  flip_from=self.rect.x + 2)
+        sub = ContextMenu(
+            (self.rect.right - 2, it.rect.y - self.PAD - 22), "Finger", it.children, None, self.fonts, self.bounds
+        )
+        if sub.rect.x < self.rect.right - 2:  # no room on the right: open to the left
+            sub.rect = sub._place((self.rect.x - sub.rect.w + 2, it.rect.y - self.PAD - 22), flip_from=self.rect.x + 2)
         self.child = (i, sub)
 
     def motion(self, pos):
@@ -236,8 +295,7 @@ class ContextMenu:
             surf.blit(img, img.get_rect(midleft=(it.rect.x + 26, it.rect.centery)))
             if it.hint:
                 h = f["small"].render(it.hint, True, TEXT_DIM)
-                surf.blit(h, h.get_rect(midright=(it.rect.right - (22 if it.children else 10),
-                                                  it.rect.centery)))
+                surf.blit(h, h.get_rect(midright=(it.rect.right - (22 if it.children else 10), it.rect.centery)))
             if it.children:
                 x, y = it.rect.right - 12, it.rect.centery
                 pygame.draw.polygon(surf, color, [(x - 4, y - 5), (x - 4, y + 5), (x + 2, y)])
@@ -259,27 +317,29 @@ class FingeringEditor(Transport):
         self.pitch_top = 84.0
         self.follow_pitch = True
         self.show_hands = True
-        self.selection = set()             # note indices
-        self.user_set = set()              # notes whose finger was set by hand, this session
+        self.selection = set()  # note indices
+        self.user_set = set()  # notes whose finger was set by hand, this session
         self.undo_stack, self.redo_stack = [], []
         self.dirty = False
         self.menu = None
         self.dialog = None
         self._after_dialog = None
-        self.press = None                  # what the left/middle button is doing
+        self.press = None  # what the left/middle button is doing
         self.hover = None
         self.message, self.message_age = "", 0.0
-        self._drawn = []                   # [(rect, note index)] from the last frame
+        self._drawn = []  # [(rect, note index)] from the last frame
         self._label_cache = {}
         self.show_difficulty = False
-        self.difficulty = None             # per note: 0 easy .. 1 hard (and above), when computed
-        self.seq = None                    # sequential fingering: {"steps", "k", "j"} while on
-        self._rebuild_due = None           # time left before a deferred _rebuild
-        self.top_buttons = [Button("Follow pitch", "follow", font="small"),
-                            Button("Difficulty", "difficulty", font="small"),
-                            Button("Open…", "open", font="small"),
-                            Button("Export…", "export", font="small"),
-                            Button("Menu", "menu", font="small")]
+        self.difficulty = None  # per note: 0 easy .. 1 hard (and above), when computed
+        self.seq = None  # sequential fingering: {"steps", "k", "j"} while on
+        self._rebuild_due = None  # time left before a deferred _rebuild
+        self.top_buttons = [
+            Button("Follow pitch", "follow", font="small"),
+            Button("Difficulty", "difficulty", font="small"),
+            Button("Open…", "open", font="small"),
+            Button("Export…", "export", font="small"),
+            Button("Menu", "menu", font="small"),
+        ]
         self.layout(self.screen.get_size())
         self.load_song(song)
 
@@ -291,8 +351,7 @@ class FingeringEditor(Transport):
         present = {n.hand for n in self.notes}
         # the editor shows the file's fingering as it is, even where it can't be played
         planned = {h: HandAnimator(song, h, repair=False) for h in (RIGHT, LEFT) if h in present}
-        self.finger = [planned[n.hand].finger_for(n) if n.hand in planned else None
-                       for n in self.notes]
+        self.finger = [planned[n.hand].finger_for(n) if n.hand in planned else None for n in self.notes]
         self.hands = planned
         pair_hands(planned.values())
         self.difficulty = None
@@ -316,13 +375,13 @@ class FingeringEditor(Transport):
         """After an edit: a new song object (hands changed) and fresh hand animators."""
         self._rebuild_due = None
         old = self.song
-        self.song = MidiSong(self.notes, old.tracks, old.duration, old.bar_times,
-                             old.beat_times, old.path, old.raw_controls)
-        self.notes = self.song.notes            # same order: sorting is stable
+        self.song = MidiSong(self.notes, old.tracks, old.duration, old.bar_times, old.beat_times, old.path, old.raw_controls)
+        self.notes = self.song.notes  # same order: sorting is stable
         self.index = {id(n): i for i, n in enumerate(self.notes)}
         fing = {id(n): f for n, f in zip(self.notes, self.finger) if f}
-        self.hands = {h: HandAnimator(self.song, h, fingering=fing) for h in (RIGHT, LEFT)
-                      if any(n.hand == h for n in self.notes)}
+        self.hands = {
+            h: HandAnimator(self.song, h, fingering=fing) for h in (RIGHT, LEFT) if any(n.hand == h for n in self.notes)
+        }
         pair_hands(self.hands.values())
         self.perf = Performance.from_animators(self.hands.values()) if self.hands else None
         self.difficulty = None
@@ -334,8 +393,7 @@ class FingeringEditor(Transport):
         self.show_difficulty = not self.show_difficulty
         if self.show_difficulty:
             self._ensure_difficulty()
-            self.say("Difficulty: green is easy, red is hard for this pianist's hand at this tempo "
-                     "(the stripe shows the hand)")
+            self.say("Difficulty: green is easy, red is hard for this pianist's hand at this tempo (the stripe shows the hand)")
 
     def _ensure_difficulty(self):
         """Per-note difficulty of the current fingering (recomputed after edits)."""
@@ -395,7 +453,7 @@ class FingeringEditor(Transport):
             return
         self._push_undo([i], f"{note_name(n.pitch)} → {HAND_NAMES[hand].lower()}, finger {finger}")
         self.notes[i] = replace(n, hand=hand)
-        self.index[id(self.notes[i])] = i      # (self.notes is the song's own list)
+        self.index[id(self.notes[i])] = i  # (self.notes is the song's own list)
         self.finger[i] = finger
         self.user_set.add(i)
         if rebuild:
@@ -403,8 +461,10 @@ class FingeringEditor(Transport):
         else:
             self.dirty = True
             self._rebuild_due = SEQ_REBUILD_T
-        self.say(f"{note_name(n.pitch)} at {format_time(n.start, True)}: "
-                 f"{HAND_NAMES[hand].lower()}, finger {finger} ({FINGER_NAMES[finger].lower()})")
+        self.say(
+            f"{note_name(n.pitch)} at {format_time(n.start, True)}: "
+            f"{HAND_NAMES[hand].lower()}, finger {finger} ({FINGER_NAMES[finger].lower()})"
+        )
 
     def set_hand(self, idxs, hand):
         """Several notes: move them to one hand and let the planner finger them."""
@@ -446,14 +506,16 @@ class FingeringEditor(Transport):
         """Finger note after note from note i on, by key (see the module docstring)."""
         # only the hand of the note it starts from: the other hand's notes are skipped
         hand = self.notes[i].hand
-        order = sorted((j for j in range(len(self.notes)) if self.notes[j].hand == hand),
-                       key=lambda j: (self.notes[j].start, -self.notes[j].pitch))
+        order = sorted(
+            (j for j in range(len(self.notes)) if self.notes[j].hand == hand),
+            key=lambda j: (self.notes[j].start, -self.notes[j].pitch),
+        )
         steps, cur = [], []
         for j in order:
             if cur and self.notes[j].start - self.notes[cur[0]].start > CHORD_TOL:
                 steps.append(cur)
                 cur = []
-            cur.append(j)                                  # highest first within a chord
+            cur.append(j)  # highest first within a chord
         if cur:
             steps.append(cur)
         k = next(k for k, st in enumerate(steps) if i in st)
@@ -461,8 +523,10 @@ class FingeringEditor(Transport):
         self.paused = True
         self.midi.all_off()
         self._seq_show()
-        self.say(f"Sequential fingering, {HAND_NAMES[hand].lower()}: 1-5 · right hand M K O ; ' · "
-                 "left hand V D W A LShift · Backspace back · Tab skip · Esc done")
+        self.say(
+            f"Sequential fingering, {HAND_NAMES[hand].lower()}: 1-5 · right hand M K O ; ' · "
+            "left hand V D W A LShift · Backspace back · Tab skip · Esc done"
+        )
 
     def seq_note(self):
         q = self.seq
@@ -515,7 +579,7 @@ class FingeringEditor(Transport):
         """Keys while sequential fingering is on; False = not ours (handle as usual)."""
         k, mod = event.key, getattr(event, "mod", 0)
         if _ctrl(mod):
-            if k in (pygame.K_z, pygame.K_y):         # undo / redo, and go to that note
+            if k in (pygame.K_z, pygame.K_y):  # undo / redo, and go to that note
                 redo = k == pygame.K_y or bool(mod & pygame.KMOD_SHIFT)
                 stack = self.redo_stack if redo else self.undo_stack
                 target = stack[-1][1][0][0] if stack and stack[-1][1] else None
@@ -556,8 +620,11 @@ class FingeringEditor(Transport):
         if not src_pig and (not self.song.path or not os.path.exists(self.song.path)):
             self.say("Can't export: the original MIDI file is no longer where it was loaded from")
             return False
-        path = save_file_dialog(initialdir=os.path.dirname(os.path.abspath(self.song.path or ".")),
-                                initialfile=default_export_name(self.song.path), pig_only=src_pig)
+        path = save_file_dialog(
+            initialdir=os.path.dirname(os.path.abspath(self.song.path or ".")),
+            initialfile=default_export_name(self.song.path),
+            pig_only=src_pig,
+        )
         self.press = None
         if not path:
             return False
@@ -565,8 +632,7 @@ class FingeringEditor(Transport):
             fing = {id(n): f for n, f in zip(self.notes, self.finger)}
             if src_pig or is_pig(path):
                 # PIG text: the notes as they are, with each note's hand and finger
-                count = save_pig(path if is_pig(path) else os.path.splitext(path)[0] + ".txt",
-                                 self.notes, fing)
+                count = save_pig(path if is_pig(path) else os.path.splitext(path)[0] + ".txt", self.notes, fing)
             else:
                 count = save_fingered_midi(self.song.path, path, self.notes, fing)
         except Exception as exc:
@@ -578,8 +644,9 @@ class FingeringEditor(Transport):
         return True
 
     def _open_other(self):
-        path = pick_file("Open MIDI file to edit",
-                         initialdir=os.path.dirname(os.path.abspath(self.song.path)) if self.song.path else None)
+        path = pick_file(
+            "Open MIDI file to edit", initialdir=os.path.dirname(os.path.abspath(self.song.path)) if self.song.path else None
+        )
         self.press = None
         return self._load_path(path) if path else True
 
@@ -598,8 +665,11 @@ class FingeringEditor(Transport):
         self._flush()
         if not self.dirty:
             return then()
-        self.dialog = Dialog("Unsaved fingering changes", "Export them before you go?",
-                             [("Export…", "export"), ("Discard", "discard"), ("Cancel", "cancel")])
+        self.dialog = Dialog(
+            "Unsaved fingering changes",
+            "Export them before you go?",
+            [("Export…", "export"), ("Discard", "discard"), ("Cancel", "cancel")],
+        )
         self._after_dialog = then
         return True
 
@@ -688,7 +758,7 @@ class FingeringEditor(Transport):
             return
         rows = self._rows_visible()
         lo, hi = min(n.pitch for n in ns), max(n.pitch for n in ns)
-        if hi - lo + 2 > rows:                    # too wide: centre on what's near "now"
+        if hi - lo + 2 > rows:  # too wide: centre on what's near "now"
             near = self.song.notes_between(self.t - 1.0, self.t + 1.5) or ns
             lo, hi = min(n.pitch for n in near), max(n.pitch for n in near)
         target = (lo + hi) / 2 + rows / 2
@@ -751,7 +821,7 @@ class FingeringEditor(Transport):
                 if self.menu.click(event.pos):
                     self.menu = None
                     if not inside and event.button == 3 and self.roll_rect.collidepoint(event.pos):
-                        self._context_menu(event.pos)      # right-click elsewhere: a new menu there
+                        self._context_menu(event.pos)  # right-click elsewhere: a new menu there
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or self.menu.key(event.key):
                     self.menu = None
@@ -844,7 +914,7 @@ class FingeringEditor(Transport):
         dx = getattr(event, "x", 0)
         mouse = pygame.mouse.get_pos()
         if _ctrl(mod):
-            self._zoom_time(0.8 ** dy, mouse[0] if self.roll_rect.collidepoint(mouse) else None)
+            self._zoom_time(0.8**dy, mouse[0] if self.roll_rect.collidepoint(mouse) else None)
         elif mod & pygame.KMOD_ALT:
             u = self.u_of(mouse[1])
             self.row_h = max(ROW_MIN, min(ROW_MAX, self.row_h + dy))
@@ -861,7 +931,7 @@ class FingeringEditor(Transport):
     def _mouse_down(self, event):
         pos, b = event.pos, event.button
         mod = pygame.key.get_mods()
-        if b in (4, 5):                     # old-style wheel events (pygame 1)
+        if b in (4, 5):  # old-style wheel events (pygame 1)
             return True
         if b == 1:
             for btn in self.top_buttons:
@@ -869,21 +939,28 @@ class FingeringEditor(Transport):
                     return self._button(btn.action)
             if self.ruler_rect.collidepoint(pos):
                 self.press = {"kind": "ruler", "pos": pos, "t": self.t, "moved": False}
-            elif (self.roll_rect.collidepoint(pos) and self.seq and self.note_at(pos) is not None
-                  and any(self.note_at(pos) in st for st in self.seq["steps"])):
-                self._seq_goto(self.note_at(pos))     # sequential mode: carry on from this note
+            elif (
+                self.roll_rect.collidepoint(pos)
+                and self.seq
+                and self.note_at(pos) is not None
+                and any(self.note_at(pos) in st for st in self.seq["steps"])
+            ):
+                self._seq_goto(self.note_at(pos))  # sequential mode: carry on from this note
             elif self.roll_rect.collidepoint(pos):
                 i = self.note_at(pos)
-                self.press = {"kind": "band", "pos": pos, "note": i, "moved": False,
-                              "add": bool(mod & pygame.KMOD_SHIFT) or _ctrl(mod),
-                              "start": (self.t_of(pos[0]), self.u_of(pos[1])),
-                              "before": set(self.selection)}
+                self.press = {
+                    "kind": "band",
+                    "pos": pos,
+                    "note": i,
+                    "moved": False,
+                    "add": bool(mod & pygame.KMOD_SHIFT) or _ctrl(mod),
+                    "start": (self.t_of(pos[0]), self.u_of(pos[1])),
+                    "before": set(self.selection),
+                }
             elif self.gutter_rect.collidepoint(pos):
-                self.press = {"kind": "pan", "pos": pos, "t": self.t, "top": self.pitch_top,
-                              "moved": False, "time": False}
+                self.press = {"kind": "pan", "pos": pos, "t": self.t, "top": self.pitch_top, "moved": False, "time": False}
         elif b == 2 and self.roll_rect.collidepoint(pos):
-            self.press = {"kind": "pan", "pos": pos, "t": self.t, "top": self.pitch_top,
-                          "moved": False, "time": True}
+            self.press = {"kind": "pan", "pos": pos, "t": self.t, "top": self.pitch_top, "moved": False, "time": True}
         elif b == 3 and (self.roll_rect.collidepoint(pos)):
             self._context_menu(pos)
         return True
@@ -967,17 +1044,16 @@ class FingeringEditor(Transport):
             sel = sorted(self.selection)
             hands = {self.notes[j].hand for j in sel}
             title = f"{len(sel)} notes selected"
-            items = [MenuItem(HAND_NAMES[h], h, checked=hands == {h}, hint=k)
-                     for h, k in ((RIGHT, "R"), (LEFT, "L"))]
-            self.menu = ContextMenu(pos, title, items, lambda h, _f: self.set_hand(sel, h),
-                                    self.fonts, bounds)
+            items = [MenuItem(HAND_NAMES[h], h, checked=hands == {h}, hint=k) for h, k in ((RIGHT, "R"), (LEFT, "L"))]
+            self.menu = ContextMenu(pos, title, items, lambda h, _f: self.set_hand(sel, h), self.fonts, bounds)
             return
         n = self.notes[i]
         cur_f = self.finger[i]
         items = []
         for h, k in ((RIGHT, "R"), (LEFT, "L")):
-            fingers = [MenuItem(f"{f}  {FINGER_NAMES[f]}", f, checked=(h == n.hand and f == cur_f),
-                                hint=str(f)) for f in range(1, 6)]
+            fingers = [
+                MenuItem(f"{f}  {FINGER_NAMES[f]}", f, checked=(h == n.hand and f == cur_f), hint=str(f)) for f in range(1, 6)
+            ]
             items.append(MenuItem(HAND_NAMES[h], h, children=fingers, checked=(h == n.hand), hint=k))
         items.append(MenuItem("Sequential fingering from here", "seq", hint="↵"))
         title = f"{note_name(n.pitch)} at {format_time(n.start, True)}"
@@ -987,6 +1063,7 @@ class FingeringEditor(Transport):
                 self.start_sequential(i)
             elif f:
                 self.set_note(i, h, f)
+
         self.menu = ContextMenu(pos, title, items, pick, self.fonts, bounds)
 
     # ----- per frame --------------------------------------------------------
@@ -1040,8 +1117,9 @@ class FingeringEditor(Transport):
             s.set_clip(pygame.Rect(0, self.felt_rect.top, s.get_width(), s.get_height()))
             draw_hands(s, [a.pose(self.t, self.keyboard) for a in self.hands.values()])
             s.set_clip(None)
-        draw_pianist_badge(s, self.fonts, self.hand_rect, pianists.active(),
-                           self.sustain_down() if self.song.controls else None)
+        draw_pianist_badge(
+            s, self.fonts, self.hand_rect, pianists.active(), self.sustain_down() if self.song.controls else None
+        )
         self._draw_top_bar(s)
         self._draw_info(s)
         if self.menu:
@@ -1081,7 +1159,7 @@ class FingeringEditor(Transport):
         font = "finger" if rh >= 13 else "label"
         diff = self._ensure_difficulty() if self.show_difficulty else None
         perf = self._performance()
-        held = {id(n) for _, _, n in perf.active(self.t)} if perf else set()   # what the hands hold now
+        held = {id(n) for _, _, n in perf.active(self.t)} if perf else set()  # what the hands hold now
         for n in self.song.notes_between(t0, t1):
             if n.pitch > self.pitch_top + 1 or n.pitch < self.u_of(r.bottom) - 1:
                 continue
@@ -1100,10 +1178,14 @@ class FingeringEditor(Transport):
             pygame.draw.rect(s, color, rect, border_radius=radius)
             if diff is not None:
                 # the hand, as a stripe down the note's start
-                pygame.draw.rect(s, HAND_COLORS[n.hand][0], (rect.x, rect.y, min(4, rect.w), rect.h),
-                                 border_top_left_radius=radius, border_bottom_left_radius=radius)
-            pygame.draw.rect(s, ACCENT if sel else mix(color, (0, 0, 0), 0.5), rect,
-                             2 if sel else 1, border_radius=radius)
+                pygame.draw.rect(
+                    s,
+                    HAND_COLORS[n.hand][0],
+                    (rect.x, rect.y, min(4, rect.w), rect.h),
+                    border_top_left_radius=radius,
+                    border_bottom_left_radius=radius,
+                )
+            pygame.draw.rect(s, ACCENT if sel else mix(color, (0, 0, 0), 0.5), rect, 2 if sel else 1, border_radius=radius)
             if i == self.hover and not sel:
                 pygame.draw.rect(s, (255, 255, 255), rect, 1, border_radius=radius)
         # finger numbers on top, so a long note never hides a short one's label
@@ -1118,8 +1200,7 @@ class FingeringEditor(Transport):
                 if i == cur:
                     pygame.draw.rect(s, (255, 255, 255), rect.inflate(6, 6), 2, border_radius=5)
                     pygame.draw.rect(s, ACCENT, rect.inflate(2, 2), 2, border_radius=4)
-                    tip = [(rect.x - 10, rect.centery - 6), (rect.x - 3, rect.centery),
-                           (rect.x - 10, rect.centery + 6)]
+                    tip = [(rect.x - 10, rect.centery - 6), (rect.x - 3, rect.centery), (rect.x - 10, rect.centery + 6)]
                     pygame.draw.polygon(s, ACCENT, tip)
                 elif i in chord:
                     pygame.draw.rect(s, (200, 200, 210), rect.inflate(4, 4), 1, border_radius=5)
@@ -1130,8 +1211,7 @@ class FingeringEditor(Transport):
             ta, ua = p["start"]
             mx, my = pygame.mouse.get_pos()
             x0, y0 = self.x_of(ta), self.y_of(ua)
-            band = pygame.Rect(int(min(x0, mx)), int(min(y0, my)),
-                               int(abs(mx - x0)), int(abs(my - y0))).clip(r)
+            band = pygame.Rect(int(min(x0, mx)), int(min(y0, my)), int(abs(mx - x0)), int(abs(my - y0))).clip(r)
             if band.w > 0 and band.h > 0:
                 fill = pygame.Surface(band.size, pygame.SRCALPHA)
                 fill.fill((*ACCENT, 40))
@@ -1240,8 +1320,10 @@ class FingeringEditor(Transport):
         s.blit(img, (10, (r.h - img.get_height()) // 2))
         x = 10 + img.get_width() + 18
         state = "Playing" if not self.paused else "Paused"
-        info = (f"{state}   {format_time(self.t, True)} / {format_time(self.song.duration)}    "
-                f"speed {int(round(self.speed * 100))}%    view {self.view_secs:.1f}s    {self.midi.status()}")
+        info = (
+            f"{state}   {format_time(self.t, True)} / {format_time(self.song.duration)}    "
+            f"speed {int(round(self.speed * 100))}%    view {self.view_secs:.1f}s    {self.midi.status()}"
+        )
         img = self.fonts["small"].render(info, True, TEXT_DIM)
         if x + img.get_width() < self._buttons_left:
             s.blit(img, (x, (r.h - img.get_height()) // 2))
@@ -1260,28 +1342,37 @@ class FingeringEditor(Transport):
             size = len(q["steps"][q["k"]])
             where = f"note {q['j'] + 1} of {size} in this chord (top down)" if size > 1 else "single note"
             last = f"   ·   {self.message}" if self.message and self.message_age < 2.0 else ""
-            text = (f"SEQUENTIAL ({HAND_NAMES[q['hand']].lower()})  {note_name(n.pitch)}, {where}   ·   1-5 · "
-                    f"R: M K O ; '  · L: V D W A LShift · Tab skip · Backspace back · Esc done{last}")
+            text = (
+                f"SEQUENTIAL ({HAND_NAMES[q['hand']].lower()})  {note_name(n.pitch)}, {where}   ·   1-5 · "
+                f"R: M K O ; '  · L: V D W A LShift · Tab skip · Backspace back · Esc done{last}"
+            )
             color = ACCENT
         elif self.message and self.message_age < 6.0:
             text, color = self.message, ACCENT
         elif self.hover is not None:
             n = self.notes[self.hover]
             f = self.finger[self.hover]
-            text = (f"{note_name(n.pitch)}   {HAND_NAMES[n.hand].lower()}, "
-                    f"finger {f if f else '?'}{' (' + FINGER_NAMES[f].lower() + ')' if f else ''}"
-                    f"   at {format_time(n.start, True)}   length {n.end - n.start:.2f}s   velocity {n.velocity}"
-                    + ("   · set by you" if self.hover in self.user_set else "")
-                    + (f"   · {difficulty_word(self.difficulty[self.hover])}" if self.difficulty else ""))
+            text = (
+                f"{note_name(n.pitch)}   {HAND_NAMES[n.hand].lower()}, "
+                f"finger {f if f else '?'}{' (' + FINGER_NAMES[f].lower() + ')' if f else ''}"
+                f"   at {format_time(n.start, True)}   length {n.end - n.start:.2f}s   velocity {n.velocity}"
+                + ("   · set by you" if self.hover in self.user_set else "")
+                + (f"   · {difficulty_word(self.difficulty[self.hover])}" if self.difficulty else "")
+            )
             color = TEXT
         elif self.selection:
             k = len(self.selection)
-            text = (f"{k} notes selected - right-click to move them to one hand (the fingering is worked out for you)"
-                    if k > 1 else "1 note selected - right-click (or press 1-5) to set its finger")
+            text = (
+                f"{k} notes selected - right-click to move them to one hand (the fingering is worked out for you)"
+                if k > 1
+                else "1 note selected - right-click (or press 1-5) to set its finger"
+            )
             color = TEXT
         else:
-            text = ("Click or drag to select notes · right-click to set hand & finger · wheel scrolls · "
-                    "Ctrl+wheel zooms · Shift+wheel moves up/down · Ctrl+Z undo · Ctrl+S export")
+            text = (
+                "Click or drag to select notes · right-click to set hand & finger · wheel scrolls · "
+                "Ctrl+wheel zooms · Shift+wheel moves up/down · Ctrl+Z undo · Ctrl+S export"
+            )
             color = TEXT_DIM
         img = self.fonts["small"].render(text, True, color)
         s.blit(img, (10, r.y + (r.h - img.get_height()) // 2))

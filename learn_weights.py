@@ -18,6 +18,7 @@ a change is kept if the training pieces agree better with the pianists.
 The result is written to learned_weights.json; fingering.py carries the
 values it was released with.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,16 +42,42 @@ TEST = [f"{i:03d}" for i in range(1, 31)]
 # default: they encode standard fingerings (scales, arpeggios, octaves, thirds)
 # that a model tuned only on this dataset would water down; --tune-figures
 # includes them.
-TUNE_W = ["stretch", "cramp", "leap", "leap_dist", "cross", "cross_2", "cross_4", "cross_wide",
-          "cross_thumb_black", "awkward", "same_finger", "same_finger_dist", "same_key_new_finger",
-          "repeat_fast", "thumb_black", "pinky_black", "finger_4", "finger_5", "chord_stretch",
-          "chord_cramp", "chord_stretch_adj", "same_shape", "shape_shift",
-          "octave_4_white", "same_finger_fast", "shift_base", "shift_speed", "shift_cost",
-          "steal", "velocity"]
+TUNE_W = [
+    "stretch",
+    "cramp",
+    "leap",
+    "leap_dist",
+    "cross",
+    "cross_2",
+    "cross_4",
+    "cross_wide",
+    "cross_thumb_black",
+    "awkward",
+    "same_finger",
+    "same_finger_dist",
+    "same_key_new_finger",
+    "repeat_fast",
+    "thumb_black",
+    "pinky_black",
+    "finger_4",
+    "finger_5",
+    "chord_stretch",
+    "chord_cramp",
+    "chord_stretch_adj",
+    "same_shape",
+    "shape_shift",
+    "octave_4_white",
+    "same_finger_fast",
+    "shift_base",
+    "shift_speed",
+    "shift_cost",
+    "steal",
+    "velocity",
+]
 FIGURE_W = ["figure"]
 TUNE_FIG = ["W_SCALE", "W_CHROM", "W_ARP", "W_OCT", "W_THIRDS", "W_SIXTHS", "W_REP", "W_TRILL"]
 
-_DATA = []          # [(piece id, [(hand, notes)], context notes, [ref {key: finger}])]
+_DATA = []  # [(piece id, [(hand, notes)], context notes, [ref {key: finger}])]
 
 
 def _key(n):
@@ -87,13 +114,14 @@ def apply(params):
             FG.BASE_W[k] = v
         else:
             setattr(FI, k, v)
-    FG._applied = "stale"                  # make apply_pianist rebuild W from BASE_W
+    FG._applied = "stale"  # make apply_pianist rebuild W from BASE_W
 
 
 def _piece_scores(args):
     params, idx = args
     apply(params)
     import pianist
+
     p = pianist.default_pianist()
     out = []
     for i in idx:

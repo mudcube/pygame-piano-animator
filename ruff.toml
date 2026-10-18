@@ -1,0 +1,10 @@
+# Python 3.10+ (see README), at the approved width; no magic trailing commas,
+# so lists that fit stay on one line.
+target-version = "py310"
+line-length = 128
+
+[format]
+skip-magic-trailing-comma = true
+
+[lint.isort]
+split-on-trailing-comma = false

@@ -1,4 +1,5 @@
 """The app's screens, driven headlessly with scripted events."""
+
 import pygame
 
 from conftest import midi_path
@@ -38,15 +39,15 @@ def test_editor_sequential_fingering(screen):
     assert all(ed.notes[j].hand == hand for st in ed.seq["steps"] for j in st)
     ed.render()
 
-    key(app, pygame.K_3)                                  # same hand, finger 3
+    key(app, pygame.K_3)  # same hand, finger 3
     assert ed.finger[first] == 3 and first in ed.user_set
-    assert ed.seq_note() != first                         # moved on
+    assert ed.seq_note() != first  # moved on
     nxt = ed.seq_note()
-    key(app, pygame.K_QUOTE if hand == "R" else pygame.K_LSHIFT)   # that hand's 5
+    key(app, pygame.K_QUOTE if hand == "R" else pygame.K_LSHIFT)  # that hand's 5
     assert ed.finger[nxt] == 5
     key(app, pygame.K_BACKSPACE)
     assert ed.seq_note() == nxt
-    ed.update(0.5)                                        # deferred rebuild of the hands
+    ed.update(0.5)  # deferred rebuild of the hands
     assert ed._rebuild_due is None
     ed.render()
     key(app, pygame.K_ESCAPE)
@@ -63,18 +64,19 @@ def test_nail_slides_to_tip_and_squashes_as_finger_curls():
 
     class Hand:
         pass
+
     r, L = 9.0, 22.0
     spans = []
     for deg in (0, 30, 60, 80, 90, 110):
         t = math.radians(deg)
-        a = (0.0, 0.0, 40.0)                              # last knuckle; the finger points up (-y)
+        a = (0.0, 0.0, 40.0)  # last knuckle; the finger points up (-y)
         b = (0.0, -L * math.cos(t), 40.0 - L * math.sin(t))
         h = Hand()
         h.radius = {3: [((0.0, 30.0, 60.0), a, r * 1.2), (a, b, r)]}
         pen = Pen()
         skins._nail(pen, h, 3, (255, 255, 255), (0, 0, 0))
         ys = [p[1] for p in pen.pts]
-        tip_end = min(b[1] - r, a[1] - r * 1.2)            # far end of the finger's outline
+        tip_end = min(b[1] - r, a[1] - r * 1.2)  # far end of the finger's outline
         spans.append((min(ys) - tip_end, max(ys) - min(ys)))
     gaps, lengths = zip(*spans)
     # the skin beyond the nail shrinks away, and the nail gets shorter
@@ -95,6 +97,7 @@ def test_no_nail_on_the_knuckle_of_a_tightly_curled_finger():
 
     class Hand:
         pass
+
     # strongly curved: the middle phalanx points straight down (its direction
     # on screen a fraction of a pixel, backward) and the tip tucks back under it
     pip, dip = (550.7, 572.2, 57.3), (550.7, 572.3, 26.6)

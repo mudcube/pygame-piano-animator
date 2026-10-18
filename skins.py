@@ -17,22 +17,30 @@ Every skin has its own colours (see SKINS) and shares these options:
 finger thickness, outline width, details (nails, creases, stitching, screws),
 cuff/sleeve, and the shadow.
 """
+
 from __future__ import annotations
 
 import math
 
 SKINS = {
     "skeleton": {"label": "Skeleton", "slots": [("bone", "Bones", (12, 12, 14))]},
-    "cartoon": {"label": "Cartoon", "slots": [("skin", "Skin", (247, 197, 152)),
-                                              ("line", "Outline", (205, 128, 78)),
-                                              ("sleeve", "Sleeve", (37, 178, 122)),
-                                              ("nail", "Nails", (252, 223, 199))]},
-    "gloves": {"label": "White gloves", "slots": [("glove", "Glove", (250, 250, 250)),
-                                                  ("line", "Outline", (20, 20, 22)),
-                                                  ("arm", "Arm", (20, 20, 22))]},
-    "robot": {"label": "Robot", "slots": [("shell", "Shell", (232, 231, 228)),
-                                          ("joint", "Joints", (62, 64, 70)),
-                                          ("tip", "Fingertips", (58, 58, 62))]},
+    "cartoon": {
+        "label": "Cartoon",
+        "slots": [
+            ("skin", "Skin", (247, 197, 152)),
+            ("line", "Outline", (205, 128, 78)),
+            ("sleeve", "Sleeve", (37, 178, 122)),
+            ("nail", "Nails", (252, 223, 199)),
+        ],
+    },
+    "gloves": {
+        "label": "White gloves",
+        "slots": [("glove", "Glove", (250, 250, 250)), ("line", "Outline", (20, 20, 22)), ("arm", "Arm", (20, 20, 22))],
+    },
+    "robot": {
+        "label": "Robot",
+        "slots": [("shell", "Shell", (232, 231, 228)), ("joint", "Joints", (62, 64, 70)), ("tip", "Fingertips", (58, 58, 62))],
+    },
 }
 SKIN_ORDER = ["cartoon", "gloves", "robot", "skeleton"]
 OPTIONS = {"finger_width": 1.0, "outline": 1.0, "details": True, "sleeve": True, "shadow": True}
@@ -80,8 +88,8 @@ def primary_color(skin):
 # --------------------------------------------------------------------------- #
 # Geometry helpers (screen space: x right, y down; z = height in pixels)
 # --------------------------------------------------------------------------- #
-FINGER_W_IN = {1: 0.82, 2: 0.70, 3: 0.72, 4: 0.68, 5: 0.60}      # proximal phalanx widths
-SEG_TAPER = (1.0, 0.9, 0.84)                                     # proximal, middle, distal
+FINGER_W_IN = {1: 0.82, 2: 0.70, 3: 0.72, 4: 0.68, 5: 0.60}  # proximal phalanx widths
+SEG_TAPER = (1.0, 0.9, 0.84)  # proximal, middle, distal
 
 
 def _mix(a, b, t):
@@ -115,6 +123,7 @@ def _hull(pts):
 
     def cross(o, a, b):
         return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
     lower, upper = [], []
     for p in pts:
         while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
@@ -143,10 +152,12 @@ class _Pen:
 
     def __init__(self, surf):
         import pygame
+
         self.pg = pygame
         self.surf = surf
         try:
             import pygame.gfxdraw as gfx
+
             self.gfx = gfx
         except Exception:
             self.gfx = None
@@ -174,8 +185,15 @@ class _Pen:
         r2 = r if r2 is None else r2
         ux, uy = _unit(b[0] - a[0], b[1] - a[1])
         nx, ny = -uy, ux
-        self.poly([(a[0] + nx * r, a[1] + ny * r), (b[0] + nx * r2, b[1] + ny * r2),
-                   (b[0] - nx * r2, b[1] - ny * r2), (a[0] - nx * r, a[1] - ny * r)], color)
+        self.poly(
+            [
+                (a[0] + nx * r, a[1] + ny * r),
+                (b[0] + nx * r2, b[1] + ny * r2),
+                (b[0] - nx * r2, b[1] - ny * r2),
+                (a[0] - nx * r, a[1] - ny * r),
+            ],
+            color,
+        )
         self.circle(a, r, color)
         self.circle(b, r2, color)
 
@@ -194,8 +212,7 @@ class _Pen:
         nx, ny = -u[1], u[0]
         pts = []
         for s, t in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
-            pts.append((c[0] + u[0] * half_len * s + nx * half_w * t,
-                        c[1] + u[1] * half_len * s + ny * half_w * t))
+            pts.append((c[0] + u[0] * half_len * s + nx * half_w * t, c[1] + u[1] * half_len * s + ny * half_w * t))
         self.poly(pts, color)
 
 
@@ -229,8 +246,11 @@ class _Hand:
         self.wc = (wx, wy, (self.wr[2] + self.wu[2]) / 2)
         self.arm_u = _unit(self.arm_end[0] - wx, self.arm_end[1] - wy)
         self.wrist_w = math.hypot(self.wu[0] - self.wr[0], self.wu[1] - self.wr[1])
-        pts = [self.wr, self.wu, self.chains[1][0]] + [self.chains[f][1] for f in range(2, 6)] + \
-              [self.chains[f][0] for f in range(2, 6)]
+        pts = (
+            [self.wr, self.wu, self.chains[1][0]]
+            + [self.chains[f][1] for f in range(2, 6)]
+            + [self.chains[f][0] for f in range(2, 6)]
+        )
         self.palm_z = sum(p[2] for p in pts) / len(pts)
         # The palm must hold the whole width of every finger at its knuckle, so
         # the index and little fingers don't hang off its corners: each knuckle
@@ -271,8 +291,7 @@ class _Hand:
         if (cmc[0] - mcp2[0]) * nx + (cmc[1] - mcp2[1]) * ny < 0:
             nx, ny = -nx, -ny
         k_out = (mcp2[0] + nx * r_i * 0.9, mcp2[1] + ny * r_i * 0.9)
-        k_mid = (mcp2[0] + (base2[0] - mcp2[0]) * 0.45 + nx * r_i * 0.8,
-                 mcp2[1] + (base2[1] - mcp2[1]) * 0.45 + ny * r_i * 0.8)
+        k_mid = (mcp2[0] + (base2[0] - mcp2[0]) * 0.45 + nx * r_i * 0.8, mcp2[1] + (base2[1] - mcp2[1]) * 0.45 + ny * r_i * 0.8)
         # the thumb side: partway up the proximal phalanx, on the index side of it
         a = (t_mcp[0] + (t_ip[0] - t_mcp[0]) * 0.35, t_mcp[1] + (t_ip[1] - t_mcp[1]) * 0.35)
         tx, ty = _unit(t_ip[0] - t_mcp[0], t_ip[1] - t_mcp[1])
@@ -284,7 +303,7 @@ class _Hand:
         # the free edge: a curve sagging toward the wrist
         span = math.hypot(k_out[0] - t_att[0], k_out[1] - t_att[1])
         reach = sum(math.hypot(q[0] - p_[0], q[1] - p_[1]) for p_, q in zip(th, th[1:]))
-        spread = min(1.0, span / max(1e-6, 0.55 * reach))      # 0 = thumb at the hand, 1 = spread
+        spread = min(1.0, span / max(1e-6, 0.55 * reach))  # 0 = thumb at the hand, 1 = spread
         mid = ((t_att[0] + k_out[0]) / 2, (t_att[1] + k_out[1]) / 2)
         sag = span * (0.32 - 0.2 * spread)
         dx, dy = _unit(self.wc[0] - mid[0], self.wc[1] - mid[1])
@@ -292,8 +311,12 @@ class _Hand:
         edge = []
         for i in range(11):
             t = i / 10
-            edge.append(((1 - t) ** 2 * t_att[0] + 2 * (1 - t) * t * ctrl[0] + t * t * k_out[0],
-                         (1 - t) ** 2 * t_att[1] + 2 * (1 - t) * t * ctrl[1] + t * t * k_out[1]))
+            edge.append(
+                (
+                    (1 - t) ** 2 * t_att[0] + 2 * (1 - t) * t * ctrl[0] + t * t * k_out[0],
+                    (1 - t) ** 2 * t_att[1] + 2 * (1 - t) * t * ctrl[1] + t * t * k_out[1],
+                )
+            )
         self.web_edge = edge
         self.web = [(cmc[0], cmc[1]), (t_root[0], t_root[1])] + edge + [k_mid, (base2[0], base2[1])]
 
@@ -328,6 +351,7 @@ class _Hand:
     def shadow(self, pen, color):
         def off(p):
             return (p[0] + 0.28 * p[2], p[1] + 0.42 * p[2], p[2])
+
         if self.palm:
             dz = self.palm_z
             pen.poly([(x + 0.28 * dz, y + 0.42 * dz) for x, y in self.palm], color)
@@ -407,11 +431,15 @@ def _creases(pen, h, f, color):
         nx, ny = -uy, ux
         for off in (-0.12, 0.12):
             q = (p[0] + ux * r * off, p[1] + uy * r * off)
-            pen.line((q[0] + nx * r * 0.45, q[1] + ny * r * 0.45),
-                     (q[0] - nx * r * 0.45, q[1] - ny * r * 0.45), color, max(1, r * 0.12))
+            pen.line(
+                (q[0] + nx * r * 0.45, q[1] + ny * r * 0.45),
+                (q[0] - nx * r * 0.45, q[1] - ny * r * 0.45),
+                color,
+                max(1, r * 0.12),
+            )
 
 
-NAIL_HIDE_DEG = (95.0, 115.0)   # phalanx pitch (90 = straight down) over which a tucked nail turns out of sight
+NAIL_HIDE_DEG = (95.0, 115.0)  # phalanx pitch (90 = straight down) over which a tucked nail turns out of sight
 
 
 def _nail(pen, h, f, fill, edge):
@@ -430,7 +458,7 @@ def _nail(pen, h, f, fill, edge):
     pa, pb, pr = segs[-2]
     dx, dy = b[0] - a[0], b[1] - a[1]
     drop = a[2] - b[2]
-    L = math.hypot(math.hypot(dx, dy), drop)             # true length of the phalanx
+    L = math.hypot(math.hypot(dx, dy), drop)  # true length of the phalanx
     if L < 3:
         return
     # the finger's forward direction on screen: the phalanx's own, or the
@@ -471,10 +499,11 @@ def _nail(pen, h, f, fill, edge):
             c, s = math.cos(t), math.sin(t)
             x = mid + (hl + grow * max(cos, 0.35 * show)) * math.copysign(abs(c) ** 0.7, c)
             y = (0.5 * r + grow) * math.copysign(abs(s) ** 0.7, s)
-            if x > xc:                                   # stay inside the rounded end
+            if x > xc:  # stay inside the rounded end
                 y = math.copysign(min(abs(y), 0.94 * math.sqrt(max(0.0, rc * rc - (x - xc) ** 2))), y)
             pts.append((b[0] + ux * x + nx * y, b[1] + uy * x + ny * y))
         return pts
+
     pen.poly(shape(0.12 * r), edge)
     pen.poly(shape(0.0), fill)
 
@@ -483,7 +512,7 @@ def _draw_gloves(pen, h):
     c, skin = h.col, h.skin
     line = c["line"]
     lw = max(1.5, h.lw * 2.6)
-    halo = _mix(c["glove"], (120, 120, 130), 0.35)         # so the outline reads on the dark floor too
+    halo = _mix(c["glove"], (120, 120, 130), 0.35)  # so the outline reads on the dark floor too
     parts = h.parts()
     arm_len = math.hypot(h.arm_end[0] - h.wc[0], h.arm_end[1] - h.wc[1])
     u = h.arm_u
@@ -508,13 +537,15 @@ def _draw_gloves(pen, h):
             if h.web:
                 wx_ = sum(p[0] for p in h.web) / len(h.web)
                 wy_ = sum(p[1] for p in h.web) / len(h.web)
-                pen.poly([(x + (wx_ - x) * 0.12 - 0.04 * h.ppi, y + (wy_ - y) * 0.12 - 0.04 * h.ppi)
-                          for x, y in h.web], c["glove"])
+                pen.poly(
+                    [(x + (wx_ - x) * 0.12 - 0.04 * h.ppi, y + (wy_ - y) * 0.12 - 0.04 * h.ppi) for x, y in h.web], c["glove"]
+                )
             if h.palm:
                 cx = sum(p[0] for p in h.palm) / len(h.palm)
                 cy = sum(p[1] for p in h.palm) / len(h.palm)
-                pen.poly([(x + (cx - x) * 0.06 - 0.05 * h.ppi, y + (cy - y) * 0.06 - 0.05 * h.ppi)
-                          for x, y in h.palm], c["glove"])
+                pen.poly(
+                    [(x + (cx - x) * 0.06 - 0.05 * h.ppi, y + (cy - y) * 0.06 - 0.05 * h.ppi) for x, y in h.palm], c["glove"]
+                )
         elif kind == "finger":
             h.fill_finger(pen, f, shade)
             for a, b, r in h.radius[f]:
@@ -543,8 +574,9 @@ def _draw_gloves(pen, h):
         pen.capsule(a, b, r + lw + 1, halo)
         pen.capsule(a, b, r + lw, line)
         pen.capsule(a, b, r, shade)
-        pen.capsule((a[0] - 0.04 * h.ppi, a[1] - 0.04 * h.ppi), (b[0] - 0.04 * h.ppi, b[1] - 0.04 * h.ppi),
-                    r * 0.78, c["glove"])
+        pen.capsule(
+            (a[0] - 0.04 * h.ppi, a[1] - 0.04 * h.ppi), (b[0] - 0.04 * h.ppi, b[1] - 0.04 * h.ppi), r * 0.78, c["glove"]
+        )
 
 
 def _draw_robot(pen, h):
@@ -562,9 +594,12 @@ def _draw_robot(pen, h):
     mid = h.along((cyl0 + arm_len) / 2)
     pen.band(mid, u, (arm_len - cyl0) / 2, hw * 0.95, (22, 22, 24))
     nx, ny = -u[1], u[0]
-    pen.line((mid[0] - nx * hw * 0.5 - u[0] * (arm_len - cyl0) / 2, mid[1] - ny * hw * 0.5 - u[1] * (arm_len - cyl0) / 2),
-             (mid[0] - nx * hw * 0.5 + u[0] * (arm_len - cyl0) / 2, mid[1] - ny * hw * 0.5 + u[1] * (arm_len - cyl0) / 2),
-             (70, 70, 76), max(1, 0.05 * h.ppi))
+    pen.line(
+        (mid[0] - nx * hw * 0.5 - u[0] * (arm_len - cyl0) / 2, mid[1] - ny * hw * 0.5 - u[1] * (arm_len - cyl0) / 2),
+        (mid[0] - nx * hw * 0.5 + u[0] * (arm_len - cyl0) / 2, mid[1] - ny * hw * 0.5 + u[1] * (arm_len - cyl0) / 2),
+        (70, 70, 76),
+        max(1, 0.05 * h.ppi),
+    )
     pen.capsule(h.along(0), h.along(cyl0), hw + lw, edge)
     pen.capsule(h.along(0), h.along(cyl0), hw, shell)
     if skin["details"]:
@@ -583,8 +618,7 @@ def _draw_robot(pen, h):
                     d = (h.wc[0] - p[0], h.wc[1] - p[1])
                     L = math.hypot(*d) or 1
                     o = 0.06 * h.ppi
-                    pen.line((p[0] + d[0] / L * o, p[1] + d[1] / L * o), (q[0] + d[0] / L * o, q[1] + d[1] / L * o),
-                             sheen, 1)
+                    pen.line((p[0] + d[0] / L * o, p[1] + d[1] / L * o), (q[0] + d[0] / L * o, q[1] + d[1] / L * o), sheen, 1)
             # redraw the palm plate over the membrane's root
             pen.poly(h.palm, shell) if h.palm else None
             if skin["details"] and h.palm:
@@ -596,8 +630,12 @@ def _draw_robot(pen, h):
                 a, b, r = segs[0]
                 pen.capsule(a, b, r * 0.9 + lw, _mix(joint, (0, 0, 0), 0.5))
                 pen.capsule(a, b, r * 0.9, _mix(joint, (0, 0, 0), 0.25))
-                pen.line((a[0] - r * 0.3, a[1] - r * 0.3), (b[0] - r * 0.3, b[1] - r * 0.3),
-                         _mix(joint, (255, 255, 255), 0.35), max(1, r * 0.15))
+                pen.line(
+                    (a[0] - r * 0.3, a[1] - r * 0.3),
+                    (b[0] - r * 0.3, b[1] - r * 0.3),
+                    _mix(joint, (255, 255, 255), 0.35),
+                    max(1, r * 0.15),
+                )
                 segs = segs[1:]
             # joints first: metal cylinders at every knuckle
             for a, b, r in segs:
@@ -620,16 +658,17 @@ def _draw_robot(pen, h):
                 nx2, ny2 = -uy, ux
                 o = rr * 0.45
                 last = i == len(segs) - 1
-                g1 = (p0[0] + (p1[0] - p0[0]) * (0.4 if last else 1.0),
-                      p0[1] + (p1[1] - p0[1]) * (0.4 if last else 1.0))
+                g1 = (p0[0] + (p1[0] - p0[0]) * (0.4 if last else 1.0), p0[1] + (p1[1] - p0[1]) * (0.4 if last else 1.0))
                 # gloss along the lit side
-                pen.line((p0[0] - nx2 * o, p0[1] - ny2 * o), (g1[0] - nx2 * o, g1[1] - ny2 * o), gloss,
-                         max(1, rr * 0.18))
+                pen.line((p0[0] - nx2 * o, p0[1] - ny2 * o), (g1[0] - nx2 * o, g1[1] - ny2 * o), gloss, max(1, rr * 0.18))
                 if last:
                     t0 = (p0[0] + (p1[0] - p0[0]) * 0.45, p0[1] + (p1[1] - p0[1]) * 0.45)
                     pen.capsule(t0, p1, rr * 0.98, tip)
-                    pen.circle((p1[0] - nx2 * rr * 0.35 - ux * rr * 0.3, p1[1] - ny2 * rr * 0.35 - uy * rr * 0.3),
-                               max(1, rr * 0.2), _mix(tip, (255, 255, 255), 0.3))
+                    pen.circle(
+                        (p1[0] - nx2 * rr * 0.35 - ux * rr * 0.3, p1[1] - ny2 * rr * 0.35 - uy * rr * 0.3),
+                        max(1, rr * 0.2),
+                        _mix(tip, (255, 255, 255), 0.3),
+                    )
 
 
 def _palm_seams(pen, h, edge):
@@ -638,13 +677,19 @@ def _palm_seams(pen, h, edge):
     wc = h.wc
     a = (cm[0] + (k2[0] - cm[0]) * 0.55, cm[1] + (k2[1] - cm[1]) * 0.55)
     side = (h.wu[0] + (k5[0] - h.wu[0]) * 0.55, h.wu[1] + (k5[1] - h.wu[1]) * 0.55)
-    ctrl = ((a[0] + side[0]) / 2 + (wc[0] - (a[0] + side[0]) / 2) * 0.35,
-            (a[1] + side[1]) / 2 + (wc[1] - (a[1] + side[1]) / 2) * 0.35)
+    ctrl = (
+        (a[0] + side[0]) / 2 + (wc[0] - (a[0] + side[0]) / 2) * 0.35,
+        (a[1] + side[1]) / 2 + (wc[1] - (a[1] + side[1]) / 2) * 0.35,
+    )
     pts = []
     for i in range(13):
         t = i / 12
-        pts.append(((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * ctrl[0] + t * t * side[0],
-                    (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * ctrl[1] + t * t * side[1]))
+        pts.append(
+            (
+                (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * ctrl[0] + t * t * side[0],
+                (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * ctrl[1] + t * t * side[1],
+            )
+        )
     for p, q in zip(pts, pts[1:]):
         pen.line(p, q, edge, max(1, 0.03 * h.ppi))
     r = max(1.2, 0.045 * h.ppi)
@@ -660,6 +705,7 @@ _shadow_cache = {}
 
 def _shadow_surface(size):
     import pygame
+
     s = _shadow_cache.get(size)
     if s is None:
         _shadow_cache.clear()
@@ -675,6 +721,7 @@ def draw_skinned(surf, items):
     each hand, lowest first.
     """
     import pygame
+
     hands = []
     for it in items:
         h = _Hand(*it[:4])
@@ -717,7 +764,7 @@ def draw_webs(surf, items):
         if not h.web:
             continue
         c = tuple(color[:3])
-        if 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] < 90:      # dark bones: a pale membrane reads better
+        if 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] < 90:  # dark bones: a pale membrane reads better
             c = _mix(c, (235, 235, 240), 0.7)
         pen.poly(h.web, c + (48,))
         for p_, q in zip(h.web_edge, h.web_edge[1:]):
@@ -732,6 +779,5 @@ def draw_poses(surf, poses):
     items = []
     for p in poses:
         fy = p["front_y"]
-        items.append((p["struct"], (lambda q, fy=fy: (q[0], fy - q[1], q[2])), p["ppi"], p["skin"],
-                      p.get("layer", 0)))
+        items.append((p["struct"], (lambda q, fy=fy: (q[0], fy - q[1], q[2])), p["ppi"], p["skin"], p.get("layer", 0)))
     draw_skinned(surf, items)

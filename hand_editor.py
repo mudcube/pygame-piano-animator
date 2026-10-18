@@ -14,6 +14,7 @@ Pages
                "Show hand span" lays the stretched hand over the keys, thumb on C.
     Behaviour  every motion and fingering preference, each with its own control.
 """
+
 from __future__ import annotations
 
 import math
@@ -21,10 +22,19 @@ import math
 import pygame
 
 import pianist as pianists
-from common import (ACCENT, BAR_BG, BG, PANEL, PANEL_EDGE, TEXT, TEXT_DIM, TOP_BAR_H, Button,
-                    Dialog, Slider, TextInput, mix)
-from hands import (HOVER, INCHES_PER_UNIT, WHITE_DEPTH_IN, WHITE_KEY_IN, HandGeometry, bone_width,
-                   halo_for, joint_radius, static_skeleton, curl_factor)
+from common import ACCENT, BAR_BG, BG, PANEL, PANEL_EDGE, TEXT, TEXT_DIM, TOP_BAR_H, Button, Dialog, Slider, TextInput, mix
+from hands import (
+    HOVER,
+    INCHES_PER_UNIT,
+    WHITE_DEPTH_IN,
+    WHITE_KEY_IN,
+    HandGeometry,
+    bone_width,
+    halo_for,
+    joint_radius,
+    static_skeleton,
+    curl_factor,
+)
 from midi_loader import is_black_key, note_name
 import skins
 
@@ -46,9 +56,11 @@ def draw_skeleton(surf, skel, to_screen, px_per_unit, color, selected=None, hove
     ppi = px_per_unit / INCHES_PER_UNIT
     halo = halo_for(color)
     if "struct" in skel:
+
         def project(q):
             x, y = to_screen(q)
             return (x, y, q[2] * px_per_unit)
+
         skins.draw_webs(surf, [(skel["struct"], project, ppi, color)])
     items = []
     for a, b, kind, bid in skel["bones"]:
@@ -94,6 +106,7 @@ def draw_skin_static(surf, skel, to_screen, px_per_unit, pianist):
     def project(q):
         x, y = to_screen(q)
         return (x, y, q[2] * px_per_unit)
+
     skins.draw_skinned(surf, [(skel["struct"], project, ppi, sk)])
     return []
 
@@ -108,6 +121,7 @@ def fit_view(skel, rect, margin=0.9):
 
     def to_screen(p):
         return (int(round(rect.centerx + (p[0] - cx) * sc)), int(round(rect.centery - (p[1] - cy) * sc)))
+
     return to_screen, sc
 
 
@@ -126,8 +140,7 @@ def _dist_to_seg(p, a, b):
 class NamePrompt:
     def __init__(self, title, text, validate, ok_label="Continue"):
         self.title, self.validate = title, validate
-        self.input = TextInput(text, placeholder="Pianist name", max_len=32,
-                               on_submit=lambda t: self._ok())
+        self.input = TextInput(text, placeholder="Pianist name", max_len=32, on_submit=lambda t: self._ok())
         self.input.set_focus(True)
         self.buttons = [Button("Cancel", "cancel"), Button(ok_label, "ok")]
         self.error = ""
@@ -307,14 +320,14 @@ class PianistStudio:
             self.selected_id = p.id
             self._refresh(reload=True)
             self.say(f"Made “{n}” - a copy of {src.name}")
+
         self._after_modal = done
 
     def delete_selected(self):
         p = self.selected()
         if p.builtin:
             return
-        self.modal = Dialog(f"Delete {p.name}?", "This can't be undone.",
-                            [("Delete", "delete"), ("Cancel", "cancel")])
+        self.modal = Dialog(f"Delete {p.name}?", "This can't be undone.", [("Delete", "delete"), ("Cancel", "cancel")])
 
         def done(choice):
             if choice == "delete":
@@ -322,6 +335,7 @@ class PianistStudio:
                 self.selected_id = pianists.active().id
                 self._refresh(reload=True)
                 self.say(f"Deleted {p.name}")
+
         self._after_modal = done
 
     def make_active(self, p=None):
@@ -339,8 +353,10 @@ class PianistStudio:
         self.selected_id = self.work.id
         self._refresh(reload=True)
         self.page = "browser"
-        self.say(f"Saved {self.work.name}" + (" - use “Make active” to play with their hands" if was_new
-                                                and pianists.active().id != self.work.id else ""))
+        self.say(
+            f"Saved {self.work.name}"
+            + (" - use “Make active” to play with their hands" if was_new and pianists.active().id != self.work.id else "")
+        )
 
     def can_save(self):
         if self.work is None:
@@ -351,8 +367,11 @@ class PianistStudio:
 
     def _leave_editor(self, then):
         if self.work is not None and self.dirty:
-            self.modal = Dialog("Unsaved pianist", f"Save {self.work.name} before leaving?",
-                                [("Save", "save"), ("Discard", "discard"), ("Cancel", "cancel")])
+            self.modal = Dialog(
+                "Unsaved pianist",
+                f"Save {self.work.name} before leaving?",
+                [("Save", "save"), ("Discard", "discard"), ("Cancel", "cancel")],
+            )
 
             def done(choice):
                 if choice == "save":
@@ -364,18 +383,21 @@ class PianistStudio:
                 elif choice == "discard":
                     self.work, self.dirty = None, False
                     then()
+
             self._after_modal = done
             return
         self.work = None
         then()
 
     def rename_work(self):
-        self.modal = NamePrompt("Rename pianist", self.work.name,
-                                lambda n: self._validate_name(n, self.work.id or None), ok_label="Rename")
+        self.modal = NamePrompt(
+            "Rename pianist", self.work.name, lambda n: self._validate_name(n, self.work.id or None), ok_label="Rename"
+        )
 
         def done(n):
             self.work.name = n
             self.dirty = True
+
         self._after_modal = done
 
     # ----- pages ------------------------------------------------------------------
@@ -401,25 +423,42 @@ class PianistStudio:
         col = sk["colors"][style][slot]
         self.sliders = []
         for i, ch in enumerate("RGB"):
+
             def setter(v, i=i):
                 c = self._skin()["colors"][self._skin()["style"]][self._slot()]
                 c[i] = int(round(v))
                 if self._skin()["style"] == "skeleton":
                     self.work.color = tuple(c)
                 self.dirty = True
+
             tint = [(220, 70, 70), (80, 190, 90), (80, 130, 230)][i]
-            self.sliders.append(Slider(ch, 0, 255, col[i], setter, fmt=lambda v: str(int(round(v))),
-                                       color=tint, step=1))
+            self.sliders.append(Slider(ch, 0, 255, col[i], setter, fmt=lambda v: str(int(round(v))), color=tint, step=1))
 
         def set_opt(key):
             def f(v):
                 self._skin()[key] = v
                 self.dirty = True
+
             return f
-        self.sliders.append(Slider("Finger thickness", *skins.FINGER_WIDTH_RANGE, sk["finger_width"],
-                                   set_opt("finger_width"), fmt=lambda v: f"{int(round(v * 100))}%"))
-        self.sliders.append(Slider("Outline", *skins.OUTLINE_RANGE, sk["outline"], set_opt("outline"),
-                                   fmt=lambda v: "none" if v < 0.05 else f"{v:.1f}×"))
+
+        self.sliders.append(
+            Slider(
+                "Finger thickness",
+                *skins.FINGER_WIDTH_RANGE,
+                sk["finger_width"],
+                set_opt("finger_width"),
+                fmt=lambda v: f"{int(round(v * 100))}%",
+            )
+        )
+        self.sliders.append(
+            Slider(
+                "Outline",
+                *skins.OUTLINE_RANGE,
+                sk["outline"],
+                set_opt("outline"),
+                fmt=lambda v: "none" if v < 0.05 else f"{v:.1f}×",
+            )
+        )
 
     def _appearance_rects(self):
         """[(action, label, rect, active, color)] for the skin chips, colour slots and toggles."""
@@ -442,8 +481,7 @@ class PianistStudio:
         self._sliders_y = y + 38
         ty = self._sliders_y + 5 * 50 + 6
         tw = (w0 - 12) // 3
-        for i, (key, label) in enumerate((("details", "Details"), ("sleeve", "Cuff / sleeve"),
-                                          ("shadow", "Shadow"))):
+        for i, (key, label) in enumerate((("details", "Details"), ("sleeve", "Cuff / sleeve"), ("shadow", "Shadow"))):
             r = pygame.Rect(x0 + i * (tw + 6), ty, tw, 28)
             out.append((("toggle", key), label, r, bool(sk[key]), None))
         self._overview_buttons_y = ty + 42
@@ -468,12 +506,26 @@ class PianistStudio:
                     self.work.anatomy[b] = pianists.clamp_bone(b, self.work.anatomy[b] * v / cur)
                 self.dirty = True
                 self._anatomy_sliders_sync()
+
             return set_
+
         pct = lambda v: f"{int(round(v * 100))}% of default"
-        self.g_mc = Slider("All metacarpals", pianists.BONE_MIN, pianists.BONE_MAX,
-                           self._group_scale(pianists.METACARPALS), group_setter(pianists.METACARPALS), fmt=pct)
-        self.g_ph = Slider("All phalanges", pianists.BONE_MIN, pianists.BONE_MAX,
-                           self._group_scale(pianists.PHALANGES), group_setter(pianists.PHALANGES), fmt=pct)
+        self.g_mc = Slider(
+            "All metacarpals",
+            pianists.BONE_MIN,
+            pianists.BONE_MAX,
+            self._group_scale(pianists.METACARPALS),
+            group_setter(pianists.METACARPALS),
+            fmt=pct,
+        )
+        self.g_ph = Slider(
+            "All phalanges",
+            pianists.BONE_MIN,
+            pianists.BONE_MAX,
+            self._group_scale(pianists.PHALANGES),
+            group_setter(pianists.PHALANGES),
+            fmt=pct,
+        )
         self.bone_slider = None
         if self.sel_bone:
             b = self.sel_bone
@@ -484,11 +536,17 @@ class PianistStudio:
                 self.dirty = True
                 self.g_mc.value = self._group_scale(pianists.METACARPALS)
                 self.g_ph.value = self._group_scale(pianists.PHALANGES)
-            self.bone_slider = Slider(pianists.bone_name(b), d * pianists.BONE_MIN, d * pianists.BONE_MAX,
-                                      self.work.anatomy[b], set_bone,
-                                      fmt=lambda v: f"{_cm(v):.2f} cm  ({int(round(v / d * 100))}%)",
-                                      lo_label=f"{_cm(d * pianists.BONE_MIN):.1f} cm",
-                                      hi_label=f"{_cm(d * pianists.BONE_MAX):.1f} cm")
+
+            self.bone_slider = Slider(
+                pianists.bone_name(b),
+                d * pianists.BONE_MIN,
+                d * pianists.BONE_MAX,
+                self.work.anatomy[b],
+                set_bone,
+                fmt=lambda v: f"{_cm(v):.2f} cm  ({int(round(v / d * 100))}%)",
+                lo_label=f"{_cm(d * pianists.BONE_MIN):.1f} cm",
+                hi_label=f"{_cm(d * pianists.BONE_MAX):.1f} cm",
+            )
 
     def _anatomy_sliders_sync(self):
         if self.bone_slider and self.sel_bone:
@@ -503,11 +561,21 @@ class PianistStudio:
         spec = pianists.BEHAVIOR[self.behavior_sel]
         self.b_slider = None
         if spec["kind"] == "slider":
+
             def set_(v, k=spec["id"]):
                 self.work.behavior[k] = v
                 self.dirty = True
-            self.b_slider = Slider(spec["label"], spec["min"], spec["max"], self.work.b(spec["id"]), set_,
-                                   fmt=spec["fmt"], lo_label=spec.get("lo"), hi_label=spec.get("hi"))
+
+            self.b_slider = Slider(
+                spec["label"],
+                spec["min"],
+                spec["max"],
+                self.work.b(spec["id"]),
+                set_,
+                fmt=spec["fmt"],
+                lo_label=spec.get("lo"),
+                hi_label=spec.get("hi"),
+            )
 
     # ----- layout helpers -------------------------------------------------------------
     def _geom(self):
@@ -540,8 +608,7 @@ class PianistStudio:
             p = self.selected()
             is_active = pianists.active().id == p.id
             y = H - 20 - 44 * 4 - 12 * 3
-            btn("Active ✓" if is_active else "Make active", "activate", y, h=44, enabled=not is_active,
-                active=is_active)
+            btn("Active ✓" if is_active else "Make active", "activate", y, h=44, enabled=not is_active, active=is_active)
             btn("Edit", "edit", y + 56, h=44, enabled=not p.builtin)
             btn("Duplicate", "duplicate", y + 112, h=44)
             btn("Delete", "delete", y + 168, h=44, enabled=not p.builtin)
@@ -549,13 +616,17 @@ class PianistStudio:
             self._appearance_rects()
             y = self._overview_buttons_y
             half = (w0 - 8) // 2
-            btn("Natural curve" if self.shape == "stretched" else "Stretched out", "shape", y, h=36,
-                w=half, font="small")
+            btn("Natural curve" if self.shape == "stretched" else "Stretched out", "shape", y, h=36, w=half, font="small")
             btn("Rename…", "rename", y, h=36, x=x0 + half + 8, w=half, font="small")
-            btn(("✓  " if "anatomy" in self.visited else "") + "Edit anatomy", "anatomy", y + 44, h=40,
-                w=half)
-            btn(("✓  " if "behavior" in self.visited else "") + "Edit behavior", "behavior", y + 44, h=40,
-                x=x0 + half + 8, w=half)
+            btn(("✓  " if "anatomy" in self.visited else "") + "Edit anatomy", "anatomy", y + 44, h=40, w=half)
+            btn(
+                ("✓  " if "behavior" in self.visited else "") + "Edit behavior",
+                "behavior",
+                y + 44,
+                h=40,
+                x=x0 + half + 8,
+                w=half,
+            )
             btn("Save pianist", "save", H - 20 - 48, h=48, enabled=self.can_save(), font="button")
         elif self.page == "anatomy":
             y = H - 20 - 40 * 3 - 10 * 2
@@ -576,8 +647,15 @@ class PianistStudio:
                 bs.append(b)
             spec = pianists.BEHAVIOR[self.behavior_sel]
             if spec["kind"] == "slider":
-                btn("Reset to default", "reset_behavior", self._detail_rect().y + 190, h=34,
-                    x=self._detail_rect().x + 24, w=200, font="small")
+                btn(
+                    "Reset to default",
+                    "reset_behavior",
+                    self._detail_rect().y + 190,
+                    h=34,
+                    x=self._detail_rect().x + 24,
+                    w=200,
+                    font="small",
+                )
         return bs
 
     def _browser_rects(self):
@@ -595,8 +673,10 @@ class PianistStudio:
         x, y = r["left"].x + 16, r["chips_y"]
         out = []
         f = self.fonts["small"]
-        for group, opts, cur, yy in (("size", ["All", "Small", "Medium", "Large"], self.size_filter, y),
-                                     ("sort", ["Name", "Recent", "Span"], self.sort, y + 34)):
+        for group, opts, cur, yy in (
+            ("size", ["All", "Small", "Medium", "Large"], self.size_filter, y),
+            ("sort", ["Name", "Recent", "Span"], self.sort, y + 34),
+        ):
             xx = x + 50
             for o in opts:
                 w = f.size(o)[0] + 22
@@ -834,7 +914,7 @@ class PianistStudio:
         mouse = pygame.mouse.get_pos()
         for b in self._buttons():
             if isinstance(b.action, tuple):
-                continue                                  # behaviour list draws itself
+                continue  # behaviour list draws itself
             b.draw(s, self.fonts, mouse)
         if self.message and self.message_age < 6:
             img = self.fonts["small"].render(self.message, True, ACCENT)
@@ -849,10 +929,12 @@ class PianistStudio:
         w, _ = s.get_size()
         r = pygame.Rect(0, 0, w, TOP_BAR_H)
         pygame.draw.rect(s, BAR_BG, r)
-        titles = {"browser": "Pianists",
-                  "overview": (("New pianist: " if self.is_new else "Editing: ") + self.work.name) if self.work else "",
-                  "anatomy": f"{self.work.name if self.work else ''} - anatomy",
-                  "behavior": f"{self.work.name if self.work else ''} - behavior"}
+        titles = {
+            "browser": "Pianists",
+            "overview": (("New pianist: " if self.is_new else "Editing: ") + self.work.name) if self.work else "",
+            "anatomy": f"{self.work.name if self.work else ''} - anatomy",
+            "behavior": f"{self.work.name if self.work else ''} - behavior",
+        }
         title = titles[self.page] + ("  •" if self.work is not None and self.dirty and self.page != "browser" else "")
         img = self.fonts["normal"].render(title, True, TEXT)
         s.blit(img, (130, (TOP_BAR_H - img.get_height()) // 2))
@@ -887,7 +969,7 @@ class PianistStudio:
         lr = r["list"]
         s.set_clip(lr)
         act = pianists.active().id
-        for k, p in enumerate(self.shown[self.scroll:]):
+        for k, p in enumerate(self.shown[self.scroll :]):
             row = pygame.Rect(lr.x, lr.y + k * ROW_H, lr.w, ROW_H - 4)
             if row.y > lr.bottom:
                 break
@@ -923,13 +1005,15 @@ class PianistStudio:
         s.blit(f["big"].render(p.name, True, TEXT), (x, y))
         y += 48
         span, label, size = self.info(p)
-        lines = [("Hand", f"{size}, spans {'an' if label[0] in 'aeiou' else 'a'} {label}"),
-                 ("Chromatic", self._opt_label(p, "chromatic")),
-                 ("Repeated notes", self._opt_label(p, "repeated")),
-                 ("Trills", self._opt_label(p, "trill")),
-                 ("Octaves", self._opt_label(p, "octaves")),
-                 ("Weak fingers", pianists.BEHAVIOR["weak_bias"]["fmt"](p.b("weak_bias")) + " bias"),
-                 ("Stretch", pianists.BEHAVIOR["stretch_bias"]["fmt"](p.b("stretch_bias")))]
+        lines = [
+            ("Hand", f"{size}, spans {'an' if label[0] in 'aeiou' else 'a'} {label}"),
+            ("Chromatic", self._opt_label(p, "chromatic")),
+            ("Repeated notes", self._opt_label(p, "repeated")),
+            ("Trills", self._opt_label(p, "trill")),
+            ("Octaves", self._opt_label(p, "octaves")),
+            ("Weak fingers", pianists.BEHAVIOR["weak_bias"]["fmt"](p.b("weak_bias")) + " bias"),
+            ("Stretch", pianists.BEHAVIOR["stretch_bias"]["fmt"](p.b("stretch_bias"))),
+        ]
         for k, v in lines:
             s.blit(f["small"].render(k, True, TEXT_DIM), (x, y))
             s.blit(f["small"].render(v, True, TEXT), (x + 120, y))
@@ -951,8 +1035,7 @@ class PianistStudio:
         if interactive:
             # anatomy: always the bones, so each can be clicked
             bone = tuple(p.skin_settings()["colors"]["skeleton"]["bone"])
-            self._segs = draw_skeleton(s, skel, to_screen, sc, bone, selected=self.sel_bone,
-                                       hover=self.hover_bone)
+            self._segs = draw_skeleton(s, skel, to_screen, sc, bone, selected=self.sel_bone, hover=self.hover_bone)
         else:
             draw_skin_static(s, skel, to_screen, sc, p)
             self._segs = []
@@ -963,8 +1046,10 @@ class PianistStudio:
         pygame.draw.rect(s, (28, 28, 35), view)
         self._draw_hand_view(s, view.inflate(-40, -40), self.shape)
         cap = "Stretched out" if self.shape == "stretched" else "Natural resting curve"
-        s.blit(self.fonts["small"].render(f"{cap}  ·  right hand (the left is its mirror image)", True, TEXT_DIM),
-               (view.x + 16, view.bottom - 26))
+        s.blit(
+            self.fonts["small"].render(f"{cap}  ·  right hand (the left is its mirror image)", True, TEXT_DIM),
+            (view.x + 16, view.bottom - 26),
+        )
         self._panel(s, panel)
         f = self.fonts
         x = panel.x + 20
@@ -1043,7 +1128,11 @@ class PianistStudio:
                 sel = bid == self.sel_bone
                 v = self.work.anatomy[bid]
                 changed = abs(v - pianists.DEFAULT_ANATOMY[bid]) > 1e-6
-                bg = mix((44, 44, 56), ACCENT, 0.4) if sel else ((60, 60, 76) if r.collidepoint(mouse) or bid == self.hover_bone else (44, 44, 56))
+                bg = (
+                    mix((44, 44, 56), ACCENT, 0.4)
+                    if sel
+                    else ((60, 60, 76) if r.collidepoint(mouse) or bid == self.hover_bone else (44, 44, 56))
+                )
                 pygame.draw.rect(s, bg, r, border_radius=4)
                 img = f["small"].render(f"{_cm(v):.1f}", True, ACCENT if changed and not sel else TEXT)
                 s.blit(img, img.get_rect(center=r.center))
@@ -1056,7 +1145,7 @@ class PianistStudio:
     def _draw_span(self, s, rect):
         """The stretched hand over the keys, thumb on C4."""
         f = self.fonts
-        lo, hi = 57, 86                                   # A3 .. D6
+        lo, hi = 57, 86  # A3 .. D6
         whites = [p for p in range(lo, hi + 1) if not is_black_key(p)]
         # keys in their true proportions: when the view is short, narrower keys
         # (centred) rather than squashed ones
@@ -1075,7 +1164,7 @@ class PianistStudio:
                 x = kb.x + sum(1 for q in whites if q < p) * ww - ww * 0.3
                 keys[p] = pygame.Rect(round(x), kb.y, round(ww * 0.6), int(kb.h * 0.63))
         ppi = ww / WHITE_KEY_IN
-        S = INCHES_PER_UNIT * ppi                         # pixels per model unit
+        S = INCHES_PER_UNIT * ppi  # pixels per model unit
         geo = HandGeometry(self.work.anatomy)
         skel = static_skeleton(geo, "span")
         t1, t5 = skel["tips"][1], skel["tips"][5]
@@ -1088,9 +1177,9 @@ class PianistStudio:
             dx, dy = p[0] - t1[0], p[1] - t1[1]
             rx, ry = dx * ca - dy * sa, dx * sa + dy * ca
             return (int(round(ox + rx * S)), int(round(oy - ry * S)))
+
         pinky_x = to_screen(t5)[0]
-        reached = max((p for p, r in keys.items() if not is_black_key(p) and r.centerx <= pinky_x + 0.25 * ww),
-                      default=60)
+        reached = max((p for p, r in keys.items() if not is_black_key(p) and r.centerx <= pinky_x + 0.25 * ww), default=60)
         for p, r in keys.items():
             if is_black_key(p):
                 continue
@@ -1112,8 +1201,10 @@ class PianistStudio:
         draw_skin_static(s, skel, to_screen, S, self.work)
         whites_up = sum(1 for q in whites if 60 < q <= reached)
         iv = pianists.interval_name(whites_up)
-        text = (f"Thumb on C4, little finger reaches {note_name(reached)}: {'an' if iv[0] in 'aeiou' else 'a'} {iv}"
-                f"  ·  thumb to little finger {self.work.span_label().split('·')[-1].strip()}")
+        text = (
+            f"Thumb on C4, little finger reaches {note_name(reached)}: {'an' if iv[0] in 'aeiou' else 'a'} {iv}"
+            f"  ·  thumb to little finger {self.work.span_label().split('·')[-1].strip()}"
+        )
         s.blit(f["normal"].render(text, True, TEXT), (rect.x, rect.y + 4))
 
     # behaviour ------------------------------------------------------------------------------
@@ -1172,6 +1263,7 @@ class PianistStudio:
     def _draw_chrom_keys(self, s, rect, style):
         """A little keyboard, C4 to D5, with the right hand's fingers going up."""
         import figures
+
         old = figures.PREFS.get("chromatic")
         figures.PREFS["chromatic"] = style
         ps = list(range(60, 75))

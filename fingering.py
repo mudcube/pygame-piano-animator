@@ -45,30 +45,41 @@ A beam search over the notes (grouped into chords) finds the cheapest
 fingering. It keeps each candidate's full history, so keys held from several
 chords back are respected. Fingers already given in the file are kept.
 """
+
 from __future__ import annotations
 
 from itertools import combinations, product
 
-MIRROR_SUM = 2 * 62            # reflect about D4: 124 - p
+MIRROR_SUM = 2 * 62  # reflect about D4: 124 - p
 
 _BLACK = {1, 3, 6, 8, 10}
 _WHITE_IDX = {0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5, 11: 6}
 _BLACK_POS = {1: 1 - 0.072, 3: 2 + 0.072, 6: 4 - 0.084, 8: 5.0, 10: 6 + 0.084}
-_OFF = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}          # natural spacing: one white key per finger
+_OFF = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}  # natural spacing: one white key per finger
 # Largest reach between two fingers of the same hand, in white keys (a hand
 # that spans a 9th from thumb to little finger)
-MAX_SPAN = {(1, 2): 5.5, (1, 3): 6.5, (1, 4): 7.2, (1, 5): 8.3, (2, 3): 2.7,
-            (2, 4): 4.6, (2, 5): 6.0, (3, 4): 2.4, (3, 5): 4.3, (4, 5): 2.6}
+MAX_SPAN = {
+    (1, 2): 5.5,
+    (1, 3): 6.5,
+    (1, 4): 7.2,
+    (1, 5): 8.3,
+    (2, 3): 2.7,
+    (2, 4): 4.6,
+    (2, 5): 6.0,
+    (3, 4): 2.4,
+    (3, 5): 4.3,
+    (4, 5): 2.6,
+}
 
 # Speed limit: no part of the hand travels faster than the pianist's top speed
 # (pianist "max_speed", m/s). Moves ease in and out (the animation's
 # smootherstep), so the peak is PEAK_RATIO times the average speed.
-WHITE_KEY_M = 6.5 / 7 * 0.0254   # a white key, in metres
+WHITE_KEY_M = 6.5 / 7 * 0.0254  # a white key, in metres
 PEAK_RATIO = 1.875
 DEFAULT_MAX_SPEED = 3.0
 MAX_SPEED = DEFAULT_MAX_SPEED
-HAND_SLACK = 1.5               # white keys a finger may sit from its natural spot without moving the hand
-MOVE_SHARE = 0.75              # share of the time between two chords the hand can spend travelling
+HAND_SLACK = 1.5  # white keys a finger may sit from its natural spot without moving the hand
+MOVE_SHARE = 0.75  # share of the time between two chords the hand can spend travelling
 
 
 def travel_time(dist_wk, max_speed=None):
@@ -99,58 +110,58 @@ def range_gap(a, b):
     return max(0.0, b[0] - a[1], a[0] - b[1])
 
 
-CHORD_TOL = 0.03               # onsets closer than this form one chord
+CHORD_TOL = 0.03  # onsets closer than this form one chord
 BEAM = 32
 IMPOSSIBLE = 60.0
 
 # Tunable weights (calibrated on Hanon; see module docstring)
 W = {
     # consecutive notes
-    "stretch": 0.35,           # per white key wider than the fingers' natural spacing
-    "cramp": 0.5,              # per white key narrower
-    "leap": 4.0,               # beyond the pair's maximum stretch: the hand leaps ...
-    "leap_dist": 0.15,         # ... plus this per white key
-    "cross": 3.2,              # thumb under / finger over the thumb
-    "cross_2": 0.6,            # ... extra when the other finger is 2
-    "cross_4": 0.8,            # ... or 4 (3 is the natural one)
-    "cross_wide": 0.8,         # ... per white key beyond 2
-    "cross_max": 4.0,          # ... and no crossing wider than this (it's a leap)
+    "stretch": 0.35,  # per white key wider than the fingers' natural spacing
+    "cramp": 0.5,  # per white key narrower
+    "leap": 4.0,  # beyond the pair's maximum stretch: the hand leaps ...
+    "leap_dist": 0.15,  # ... plus this per white key
+    "cross": 3.2,  # thumb under / finger over the thumb
+    "cross_2": 0.6,  # ... extra when the other finger is 2
+    "cross_4": 0.8,  # ... or 4 (3 is the natural one)
+    "cross_wide": 0.8,  # ... per white key beyond 2
+    "cross_max": 4.0,  # ... and no crossing wider than this (it's a leap)
     "cross_thumb_black": 2.4,  # ... thumb landing on a black key
-    "awkward": 9.6,            # any other crossing (+1 per key)
-    "same_finger": 3.0,        # same finger, new key (+ same_finger_dist per key)
+    "awkward": 9.6,  # any other crossing (+1 per key)
+    "same_finger": 3.0,  # same finger, new key (+ same_finger_dist per key)
     "same_finger_dist": 0.4,
     "same_key_new_finger": 0.8,
-    "repeat_fast": 0.6,        # same finger re-striking a key quickly
-    "repeat_t": 0.2,           # below this, re-striking with the same finger gets hard...
-    "repeat_very_fast": 8.0,   # ... up to this much extra, and changing finger costs less
+    "repeat_fast": 0.6,  # same finger re-striking a key quickly
+    "repeat_t": 0.2,  # below this, re-striking with the same finger gets hard...
+    "repeat_very_fast": 8.0,  # ... up to this much extra, and changing finger costs less
     # individual fingers
     "thumb_black": 1.92,
     "pinky_black": 0.96,
-    "finger_4": 0.12,          # the weak fingers: when two fingerings are otherwise
-    "finger_5": 0.05,          # equal, take the stronger fingers (trills: figures.py)
+    "finger_4": 0.12,  # the weak fingers: when two fingerings are otherwise
+    "finger_5": 0.05,  # equal, take the stronger fingers (trills: figures.py)
     # chords
     "chord_stretch": 0.4,
     "chord_cramp": 0.4,
     "chord_stretch_adj": 1.2,
-    "figure": 1.0,             # times the figure's weight, for leaving its standard fingering
-    "thumb_double": 7.0,       # the thumb covering two neighbouring keys in a chord
-    "pinky_double": 8.0,       # the little finger covering two neighbouring white keys
-    "same_shape": 1.5,         # the same fingers on a chord shape that moves by step (4-2, 4-2, 4-2)
-    "shape_shift": 0.5,        # moving a whole chord shape with the same fingers
-    "octave_4_white": 1.5,     # an octave's top note with 4 on a white key
+    "figure": 1.0,  # times the figure's weight, for leaving its standard fingering
+    "thumb_double": 7.0,  # the thumb covering two neighbouring keys in a chord
+    "pinky_double": 8.0,  # the little finger covering two neighbouring white keys
+    "same_shape": 1.5,  # the same fingers on a chord shape that moves by step (4-2, 4-2, 4-2)
+    "shape_shift": 0.5,  # moving a whole chord shape with the same fingers
+    "octave_4_white": 1.5,  # an octave's top note with 4 on a white key
     # physical, against time
-    "same_finger_t": 0.35,     # a finger needs about this long to reach a new key
+    "same_finger_t": 0.35,  # a finger needs about this long to reach a new key
     "same_finger_fast": 6.0,
-    "shift_base": 1.0,         # white keys the hand may shift between two notes...
-    "shift_cross": 3.5,        # ... or through a thumb crossing ...
-    "shift_speed": 8.0,        # ... plus this many per second between them
-    "shift_cost": 1.2,         # per white key beyond that
-    "steal": 1.5,              # letting a held key go early to reuse its finger
-    "held_tol": 0.06,          # a key released this soon after an onset isn't held
-    "velocity": 0.05,          # how fast the fingers must travel from a relaxed hand (below)
-    "too_fast": 40.0,          # per 100% over the time a move needs at the pianist's top speed
-    "inner_room": 12.0,        # an octave on 1-4 with an inner note down between them (1-5 leaves room)
-    "inner_finger": 4.0,       # ...and an inner note on another finger than the one lying over it
+    "shift_base": 1.0,  # white keys the hand may shift between two notes...
+    "shift_cross": 3.5,  # ... or through a thumb crossing ...
+    "shift_speed": 8.0,  # ... plus this many per second between them
+    "shift_cost": 1.2,  # per white key beyond that
+    "steal": 1.5,  # letting a held key go early to reuse its finger
+    "held_tol": 0.06,  # a key released this soon after an onset isn't held
+    "velocity": 0.05,  # how fast the fingers must travel from a relaxed hand (below)
+    "too_fast": 40.0,  # per 100% over the time a move needs at the pianist's top speed
+    "inner_room": 12.0,  # an octave on 1-4 with an inner note down between them (1-5 leaves room)
+    "inner_finger": 4.0,  # ...and an inner note on another finger than the one lying over it
 }
 
 # Economy of motion (after pianoplayer's cost): after each chord the other
@@ -172,28 +183,28 @@ BLACK_EASE = {1: 0.3, 2: 1.0, 3: 1.1, 4: 0.8, 5: 0.7}
 # A pianist picks one ("Fingering model" behaviour); their other preferences
 # then scale it. The figure suggestions are the same in both.
 W_TEXTBOOK = dict(W)
-LEARNED_W = {                    # learn_weights.py on PIG pieces 031-150 (textbook value in comments)
-    "cramp": 0.125,                # 0.5
-    "leap_dist": 0.3,              # 0.15
-    "cross": 6.4,                  # 3.2
-    "cross_2": 0.3,                # 0.6
-    "cross_4": 3.2,                # 0.8
-    "cross_wide": 1.6,             # 0.8
-    "same_finger": 6.0,            # 3.0
-    "same_finger_dist": 0.2,       # 0.4
-    "same_key_new_finger": 4.8,    # 0.8
-    "repeat_fast": 0.3,            # 0.6
-    "thumb_black": 0.24,           # 1.92
-    "pinky_black": 1.152,          # 0.96
-    "finger_4": 0.24,              # 0.12
-    "chord_stretch": 1.6,          # 0.4
-    "chord_stretch_adj": 5.76,     # 1.2
-    "octave_4_white": 3.0,         # 1.5
-    "shift_base": 2.0,             # 1.0
-    "shift_speed": 2.0,            # 8.0
-    "shift_cost": 2.4,             # 1.2
-    "steal": 12.0,                 # 1.5
-    "velocity": 0.1,               # 0.05
+LEARNED_W = {  # learn_weights.py on PIG pieces 031-150 (textbook value in comments)
+    "cramp": 0.125,  # 0.5
+    "leap_dist": 0.3,  # 0.15
+    "cross": 6.4,  # 3.2
+    "cross_2": 0.3,  # 0.6
+    "cross_4": 3.2,  # 0.8
+    "cross_wide": 1.6,  # 0.8
+    "same_finger": 6.0,  # 3.0
+    "same_finger_dist": 0.2,  # 0.4
+    "same_key_new_finger": 4.8,  # 0.8
+    "repeat_fast": 0.3,  # 0.6
+    "thumb_black": 0.24,  # 1.92
+    "pinky_black": 1.152,  # 0.96
+    "finger_4": 0.24,  # 0.12
+    "chord_stretch": 1.6,  # 0.4
+    "chord_stretch_adj": 5.76,  # 1.2
+    "octave_4_white": 3.0,  # 1.5
+    "shift_base": 2.0,  # 1.0
+    "shift_speed": 2.0,  # 8.0
+    "shift_cost": 2.4,  # 1.2
+    "steal": 12.0,  # 1.5
+    "velocity": 0.1,  # 0.05
 }
 BASE_W = dict(W)
 BASE_W.update(LEARNED_W)
@@ -214,6 +225,7 @@ def apply_pianist(p):
         return
     _applied = key
     import figures
+
     base = W_TEXTBOOK if p is not None and p.b("fingering_model") == "textbook" else BASE_W
     W.clear()
     W.update(base)
@@ -225,15 +237,16 @@ def apply_pianist(p):
         return
     MAX_SPEED = float(p.b("max_speed"))
     from hands import reach_scale, hand_span_inches
+
     k = hand_span_inches(p.anatomy) / hand_span_inches(None)
     for f, v in BASE_RELAXED.items():
         RELAXED[f] = v * k
-    stretch = p.b("stretch_bias")                 # -1 shift/cross .. +1 stretch
+    stretch = p.b("stretch_bias")  # -1 shift/cross .. +1 stretch
     scale = reach_scale(p.anatomy)
     for pair, v in BASE_MAX_SPAN.items():
         # the anatomical reach; a pianist who prefers shifting uses a little less of it
         MAX_SPAN[pair] = v * scale[pair] * (1.0 + 0.06 * min(0.0, stretch))
-    k = p.b("weak_bias") / 0.25                   # 1 at the default
+    k = p.b("weak_bias") / 0.25  # 1 at the default
     W["finger_4"] = base["finger_4"] * k
     W["finger_5"] = base["finger_5"] * k
     for name in ("stretch", "chord_stretch", "chord_stretch_adj"):
@@ -245,8 +258,7 @@ def apply_pianist(p):
     W["thumb_black"] = base["thumb_black"] * b
     W["pinky_black"] = base["pinky_black"] * b
     W["cross_thumb_black"] = base["cross_thumb_black"] * b
-    figures.PREFS.update(chromatic=p.b("chromatic"), repeated=p.b("repeated"),
-                         trill=p.b("trill"), octaves=p.b("octaves"))
+    figures.PREFS.update(chromatic=p.b("chromatic"), repeated=p.b("repeated"), trill=p.b("trill"), octaves=p.b("octaves"))
 
 
 def is_black(pitch):
@@ -292,8 +304,7 @@ def thumb_pair(a, b):
 def pinky_pair(a, b):
     """Can the little finger cover both keys? Only two neighbouring white keys."""
     a, b = min(a, b), max(a, b)
-    return (a != b and not is_black(a) and not is_black(b) and b - a <= 2
-            and abs(key_pos(b) - key_pos(a) - 1.0) < 1e-6)
+    return a != b and not is_black(a) and not is_black(b) and b - a <= 2 and abs(key_pos(b) - key_pos(a) - 1.0) < 1e-6
 
 
 def double_ok(p1, p2, f):
@@ -320,7 +331,7 @@ def pair_cost(p1, f1, p2, f2):
         return W["same_key_new_finger"]
     if is_crossing(p1, f1, p2, f2):
         if abs(d) > W["cross_max"]:
-            return leap_cost(d)                      # too wide to pass under/over: a leap
+            return leap_cost(d)  # too wide to pass under/over: a leap
         other = f1 if f2 == 1 else f2
         c = W["cross"] + {2: W["cross_2"], 3: 0.0, 4: W["cross_4"]}[other]
         c += W["cross_wide"] * max(0.0, abs(d) - 2.0)
@@ -354,8 +365,7 @@ def chord_pair_cost(pl, fl, ph, fh):
         # or a crossing inside the chord - allowed, but free notes avoid it
         if fl == fh:
             return IMPOSSIBLE
-        return W["cross"] * 2 + W["chord_stretch"] * abs(rel) + \
-            (IMPOSSIBLE if rel > MAX_SPAN.get((fh, fl), 12) else 0.0)
+        return W["cross"] * 2 + W["chord_stretch"] * abs(rel) + (IMPOSSIBLE if rel > MAX_SPAN.get((fh, fl), 12) else 0.0)
     c = W["chord_stretch"] * max(0.0, rel - nat) + W["chord_cramp"] * max(0.0, nat - rel)
     if fh - fl == 1 and fl != 1:
         # neighbouring long fingers (2-3, 3-4, 4-5) held apart: thirds want 1-3 / 2-4 / 3-5
@@ -363,7 +373,7 @@ def chord_pair_cost(pl, fl, ph, fh):
     if rel > MAX_SPAN[(fl, fh)]:
         c += IMPOSSIBLE
     if fl == 1 and fh == 4 and rel >= 6.0 and not is_black(ph):
-        c += W["octave_4_white"]                 # octaves: 1-5, with 4 only on black keys
+        c += W["octave_4_white"]  # octaves: 1-5, with 4 only on black keys
     return c
 
 
@@ -401,8 +411,8 @@ def inner_room_cost(pairs):
     return c
 
 
-INNER_2_TOP = 0.5            # share of an octave's width (from the thumb) where 2 lies over the key ...
-INNER_3_TOP = 0.72           # ... and 3
+INNER_2_TOP = 0.5  # share of an octave's width (from the thumb) where 2 lies over the key ...
+INNER_3_TOP = 0.72  # ... and 3
 
 
 def shape_cost(pairs):
@@ -443,13 +453,14 @@ def group_notes(notes, vpitch=None, tolerance=CHORD_TOL):
     out = []
     for start, ns in groups:
         ns = sorted(ns, key=lambda n: vp(n.pitch))
+
         # one hand, five fingers (a key more each if the thumb / little finger
         # can take two): drop inner notes
         def room(ns):
             if len(ns) < 2:
                 return 5
-            return (5 + thumb_pair(vp(ns[0].pitch), vp(ns[1].pitch))
-                    + pinky_pair(vp(ns[-2].pitch), vp(ns[-1].pitch)))
+            return 5 + thumb_pair(vp(ns[0].pitch), vp(ns[1].pitch)) + pinky_pair(vp(ns[-2].pitch), vp(ns[-1].pitch))
+
         while len(ns) > room(ns):
             ns.pop(len(ns) // 2)
         out.append((start, ns))
@@ -565,8 +576,7 @@ def _states(given, ps=None):
         return fixed
     free = [i for i, g in enumerate(given) if g is None]
     left = [f for f in range(1, 6) if f not in given]
-    pools = list(combinations(left, len(free))) if len(left) >= len(free) else \
-        list(product(range(1, 6), repeat=len(free)))
+    pools = list(combinations(left, len(free))) if len(left) >= len(free) else list(product(range(1, 6), repeat=len(free)))
     out = []
     for pool in pools:
         st = list(given)
@@ -576,8 +586,19 @@ def _states(given, ps=None):
     return out or [tuple(g or 1 for g in given)]
 
 
-def plan_fingering(groups, vpitch=None, beam=BEAM, hand=None, context=None, figures=True,
-                   pianist=None, fixed=None, costs=None, repair=False, repaired=None):
+def plan_fingering(
+    groups,
+    vpitch=None,
+    beam=BEAM,
+    hand=None,
+    context=None,
+    figures=True,
+    pianist=None,
+    fixed=None,
+    costs=None,
+    repair=False,
+    repaired=None,
+):
     """
     Fingering for chord groups (from group_notes). Returns {id(note): finger}.
     Notes that already carry a finger (from the file) keep it. `vpitch` maps
@@ -599,6 +620,7 @@ def plan_fingering(groups, vpitch=None, beam=BEAM, hand=None, context=None, figu
         return {}
     if pianist is None:
         import pianist as pianists
+
         pianist = pianists.active()
     apply_pianist(pianist)
     vp = vpitch or (lambda p: p)
@@ -608,6 +630,7 @@ def plan_fingering(groups, vpitch=None, beam=BEAM, hand=None, context=None, figu
     suggest = {}
     if figures:
         from figures import detect
+
         suggest = detect(groups, hand, context, vp)
 
     # beam entries: (cost, fingers of the last chord, held keys, back pointer, state)
@@ -639,6 +662,7 @@ def plan_fingering(groups, vpitch=None, beam=BEAM, hand=None, context=None, figu
                             c += IMPOSSIBLE
                 local.append(c)
             return local
+
         states = _states(given, ps)
         local = chord_costs(states)
         if repair and len(ns) > 1 and any(given) and min(local) >= IMPOSSIBLE:
@@ -726,8 +750,9 @@ def plan_fingering(groups, vpitch=None, beam=BEAM, hand=None, context=None, figu
 def finger_hand(notes, left=False, beam=BEAM, context=None, pianist=None):
     """Convenience: {id(note): finger} for one hand's notes (context: the whole song, for keys)."""
     vp = mirror_pitch if left else None
-    return plan_fingering(group_notes(notes, vpitch=vp), vp, beam=beam,
-                          hand="L" if left else "R", context=context, pianist=pianist)
+    return plan_fingering(
+        group_notes(notes, vpitch=vp), vp, beam=beam, hand="L" if left else "R", context=context, pianist=pianist
+    )
 
 
 def score_fingering(groups, fingering, vpitch=None, hand=None, context=None, pianist=None):
@@ -737,6 +762,7 @@ def score_fingering(groups, fingering, vpitch=None, hand=None, context=None, pia
     finger speed...), leaving out how far it is from the standard fingerings.
     """
     costs = {}
-    plan_fingering(groups, vpitch, beam=4, hand=hand, context=context, figures=False,
-                   pianist=pianist, fixed=fingering, costs=costs)
+    plan_fingering(
+        groups, vpitch, beam=4, hand=hand, context=context, figures=False, pianist=pianist, fixed=fingering, costs=costs
+    )
     return costs

@@ -31,6 +31,7 @@ Layout of the player, top to bottom: progress bar, falling-notes area,
 keyboard, and the hand area. The hand skeletons (hands.py, both hands) are
 drawn over the keyboard and hand area.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,16 +39,42 @@ import os
 
 import pygame
 
-from common import (BAR_BG, BAR_FILL, BAR_LINE, BG, FELT_H, FPS, HAND_COLORS, LANE_LINE,
-                    LEAD_IN, TEXT, TEXT_DIM, TOP_BAR_H, WINDOW_SIZE, Button, Keyboard,
-                    MidiOut, Performance, Transport, bottom_layout, center_text, draw_felt,
-                    draw_hand_area, draw_pianist_badge, format_time, load_fonts, mix, pick_file,
-                    MAX_FRAME_DT, show_loading)
+from common import (
+    BAR_BG,
+    BAR_FILL,
+    BAR_LINE,
+    BG,
+    FELT_H,
+    FPS,
+    HAND_COLORS,
+    LANE_LINE,
+    LEAD_IN,
+    TEXT,
+    TEXT_DIM,
+    TOP_BAR_H,
+    WINDOW_SIZE,
+    Button,
+    Keyboard,
+    MidiOut,
+    Performance,
+    Transport,
+    bottom_layout,
+    center_text,
+    draw_felt,
+    draw_hand_area,
+    draw_pianist_badge,
+    format_time,
+    load_fonts,
+    mix,
+    pick_file,
+    MAX_FRAME_DT,
+    show_loading,
+)
 import pianist as pianists
 from hands import HandAnimator, draw_hands, pair_hands
 from midi_loader import LEFT, RIGHT, load_song
 
-DEFAULT_WINDOW_SECS = 3.0    # how many seconds of upcoming notes fit above the keys
+DEFAULT_WINDOW_SECS = 3.0  # how many seconds of upcoming notes fit above the keys
 SEEK_STEP = 5.0
 
 # What a mode's handle_event can return besides True (carry on) / False (quit)
@@ -76,8 +103,7 @@ class Visualizer(Transport):
     def set_song(self, song):
         self.midi.all_off()
         self.song = song
-        self.hands = {h: HandAnimator(song, h) for h in (RIGHT, LEFT)
-                      if any(n.hand == h for n in song.notes)}
+        self.hands = {h: HandAnimator(song, h) for h in (RIGHT, LEFT) if any(n.hand == h for n in song.notes)}
         pair_hands(self.hands.values())
         # what's heard and the keys that go down follow what the hands play
         self.perf = Performance.from_animators(self.hands.values()) if self.hands else None
@@ -189,7 +215,7 @@ class Visualizer(Transport):
         active = []
         if self.song:
             t, song = self.t, self.song
-            pps = fall.h / self.window_secs          # pixels per second
+            pps = fall.h / self.window_secs  # pixels per second
             keyline = fall.bottom
             t_top = t + self.window_secs
 
@@ -240,8 +266,9 @@ class Visualizer(Transport):
             s.set_clip(pygame.Rect(0, self.felt_rect.top, s.get_width(), s.get_height()))
             draw_hands(s, [a.pose(self.t, kb) for a in self.hands.values()])
             s.set_clip(None)
-        draw_pianist_badge(s, self.fonts, self.hand_rect, pianists.active(),
-                           self.sustain_down() if self.song and self.song.controls else None)
+        draw_pianist_badge(
+            s, self.fonts, self.hand_rect, pianists.active(), self.sustain_down() if self.song and self.song.controls else None
+        )
         self._draw_top_bar()
 
         if not self.song:
@@ -262,8 +289,10 @@ class Visualizer(Transport):
         img = self.fonts["normal"].render(left, True, TEXT)
         s.blit(img, (10, (r.h - img.get_height()) // 2))
 
-        right = (f"speed {int(round(self.speed * 100))}%   view {self.window_secs:.1f}s   "
-                 f"{self.midi.status()}      Space  ←→  ↑↓  +/-  M  O  H  F   Esc menu")
+        right = (
+            f"speed {int(round(self.speed * 100))}%   view {self.window_secs:.1f}s   "
+            f"{self.midi.status()}      Space  ←→  ↑↓  +/-  M  O  H  F   Esc menu"
+        )
         img = self.fonts["small"].render(right, True, TEXT_DIM)
         s.blit(img, (r.w - img.get_width() - 10, (r.h - img.get_height()) // 2))
 
@@ -276,12 +305,27 @@ class MainMenu:
         self.app = app
         self.message = ""
         self.buttons = [
-            Button("Play a MIDI file", "play", font="button", key_hint="P",
-                   sub="Browse for a file and watch it in falling-notes mode"),
-            Button("Fingering editor", "edit", font="button", key_hint="E",
-                   sub="Open a MIDI file, fine-tune its fingering and export it"),
-            Button("Pianists & hands", "pianists", font="button", key_hint="H",
-                   sub="Create pianists: hand anatomy, colour and technique; choose the active one"),
+            Button(
+                "Play a MIDI file",
+                "play",
+                font="button",
+                key_hint="P",
+                sub="Browse for a file and watch it in falling-notes mode",
+            ),
+            Button(
+                "Fingering editor",
+                "edit",
+                font="button",
+                key_hint="E",
+                sub="Open a MIDI file, fine-tune its fingering and export it",
+            ),
+            Button(
+                "Pianists & hands",
+                "pianists",
+                font="button",
+                key_hint="H",
+                sub="Create pianists: hand anatomy, colour and technique; choose the active one",
+            ),
             Button("Quit", "quit", font="normal", key_hint="Esc"),
         ]
         self.layout(app.screen.get_size())
@@ -326,8 +370,7 @@ class MainMenu:
         if action == "pianists":
             self.app.studio()
             return True
-        path = pick_file("Open MIDI file" if action == "play" else "Open MIDI file to edit",
-                         initialdir=self.app.last_dir)
+        path = pick_file("Open MIDI file" if action == "play" else "Open MIDI file to edit", initialdir=self.app.last_dir)
         if path:
             (self.app.play if action == "play" else self.app.edit)(path)
         return True
@@ -409,17 +452,18 @@ class App:
     def play(self, path_or_song):
         song = self._load(path_or_song) if isinstance(path_or_song, str) else path_or_song
         if song:
-            self._switch(Visualizer(self.screen, song, midi=self.midi, speed=self.speed,
-                                    fonts=self.fonts))
+            self._switch(Visualizer(self.screen, song, midi=self.midi, speed=self.speed, fonts=self.fonts))
 
     def edit(self, path_or_song):
         from editor import FingeringEditor
+
         song = self._load(path_or_song) if isinstance(path_or_song, str) else path_or_song
         if song:
             self._switch(FingeringEditor(self, song))
 
     def studio(self):
         from hand_editor import PianistStudio
+
         self._switch(PianistStudio(self))
 
     def handle_event(self, event):

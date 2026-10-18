@@ -32,6 +32,7 @@ pianist's hands can actually do:
 
 Only the hand labels are decided here; fingering comes later.
 """
+
 from __future__ import annotations
 
 import math
@@ -40,30 +41,30 @@ from fingering import key_pos, travel_time, MOVE_SHARE
 
 LEFT, RIGHT = "L", "R"
 
-CHORD_TOL = 0.035        # onsets closer than this count as one group
-BEAM = 32                # candidates kept per group
+CHORD_TOL = 0.035  # onsets closer than this count as one group
+BEAM = 32  # candidates kept per group
 
 # span within one hand (semitones): free up to an octave, costly to a 10th
 SPAN_FREE = 12
 SPAN_MAX = 16
-SPAN_HELD_MAX = 19       # with keys still held
-SPAN_OVER = 12.0         # a chord wider than SPAN_MAX has to be rolled
+SPAN_HELD_MAX = 19  # with keys still held
+SPAN_OVER = 12.0  # a chord wider than SPAN_MAX has to be rolled
 # movement: a hand covering its last notes can reach anything within
 # HAND_WK white keys without moving; beyond that it travels, at most at the
 # pianist's top speed (TOO_FAST per 100% over the time that needs, squared)
 HAND_WK = 7.0
 TOO_FAST = 60.0
-MOVE_COST = 0.06         # per semitone of any shift (hands prefer to stay put)
-SPEED_COST = 0.25        # per 40 semitones/second of travel the note demands
-CHORD_COST = 0.5         # per extra note in a chord, when chords come quickly
+MOVE_COST = 0.06  # per semitone of any shift (hands prefer to stay put)
+SPEED_COST = 0.25  # per 40 semitones/second of travel the note demands
+CHORD_COST = 0.5  # per extra note in a chord, when chords come quickly
 HELD_TOL = 0.03
-TRACK_T = 1.5            # a track's notes played by one hand ...
-TRACK_SWITCH = 12.0       # ... cost this to move to the other hand within TRACK_T
-CROWD_GAP = 5            # semitones the hands want between them ...
-CROWD = 1.5              # ... per semitone short of that
-REPEAT_T = 0.5           # a chord repeated within this ...
-REPEAT_SPLIT = 4.0       # ... and split differently from the last time costs this
-CROWD_T = 0.25           # a hand's last notes count this long for crowding          # a note ending within this after the onset counts as released
+TRACK_T = 1.5  # a track's notes played by one hand ...
+TRACK_SWITCH = 12.0  # ... cost this to move to the other hand within TRACK_T
+CROWD_GAP = 5  # semitones the hands want between them ...
+CROWD = 1.5  # ... per semitone short of that
+REPEAT_T = 0.5  # a chord repeated within this ...
+REPEAT_SPLIT = 4.0  # ... and split differently from the last time costs this
+CROWD_T = 0.25  # a hand's last notes count this long for crowding          # a note ending within this after the onset counts as released
 
 
 def _groups(notes):
@@ -78,14 +79,15 @@ def _groups(notes):
 
 class _Hand:
     """A hand's recent history along one candidate path (immutable-ish)."""
+
     __slots__ = ("center", "last_t", "last_lo", "last_hi", "held")
 
     def __init__(self, center, last_t=-math.inf, last_lo=None, last_hi=None, held=()):
-        self.center = center          # where the hand is, in semitones
-        self.last_t = last_t          # when it last played
-        self.last_lo = last_lo        # range of the last group it played
+        self.center = center  # where the hand is, in semitones
+        self.last_t = last_t  # when it last played
+        self.last_lo = last_lo  # range of the last group it played
         self.last_hi = last_hi
-        self.held = held              # ((end_time, pitch), ...) still sounding
+        self.held = held  # ((end_time, pitch), ...) still sounding
 
     def after(self, t, notes):
         held = tuple(h for h in self.held if h[0] > t + HELD_TOL)
@@ -135,7 +137,7 @@ def _hand_cost(hand, t, notes, side, other):
         c += CHORD_COST * size * (len(ps) - 1) ** 1.5 * min(3.0, 0.4 / max(1e-3, dt_h))
     if hand.last_lo is None:
         m = sum(ps) / len(ps)
-        c += MOVE_COST * abs(m - hand.center)          # first notes: near where it starts
+        c += MOVE_COST * abs(m - hand.center)  # first notes: near where it starts
     # --- movement since the hand last played
     if hand.last_lo is not None:
         dt = max(1e-3, t - hand.last_t)
@@ -144,7 +146,7 @@ def _hand_cost(hand, t, notes, side, other):
         d = max(max(0.0, p - hand.last_hi, hand.last_lo - p) for p in ps)
         m = sum(ps) / len(ps)
         shift = abs(m - hand.center)
-        fade = math.exp(-dt / 1.5)                    # old positions matter less
+        fade = math.exp(-dt / 1.5)  # old positions matter less
         c += fade * MOVE_COST * shift
         # the least the hand must travel (white keys): from where it could
         # play its last notes to where it can play these
@@ -196,13 +198,14 @@ def _fit_spans(pianist):
     if pianist is not None:
         try:
             from hands import hand_span_inches
+
             k = hand_span_inches(pianist.anatomy) / hand_span_inches(None)
         except Exception:
             k = 1.0
     SPAN_FREE, SPAN_MAX, SPAN_HELD_MAX = (v * k for v in _BASE_SPANS)
 
 
-MAX_SPEED = 3.0          # m/s, from the pianist (split_hands)
+MAX_SPEED = 3.0  # m/s, from the pianist (split_hands)
 
 
 def split_hands(notes, pianist=None):
@@ -214,6 +217,7 @@ def split_hands(notes, pianist=None):
     if pianist is None:
         try:
             import pianist as pianists
+
             pianist = pianists.active()
         except Exception:
             pianist = None
@@ -238,13 +242,12 @@ def split_hands(notes, pianist=None):
     history = []
     prev = None
     for t, ns in groups:
-        repeat = prev is not None and t - prev[0] < REPEAT_T and \
-            [n.pitch for n in prev[1]] == [n.pitch for n in ns]
+        repeat = prev is not None and t - prev[0] < REPEAT_T and [n.pitch for n in prev[1]] == [n.pitch for n in ns]
         prev = (t, ns)
         cand = []
         for bi, (cost, rh, lh, _, pk, tr) in enumerate(beam):
             last = dict(tr)
-            for k in range(len(ns) + 1):              # lowest k notes -> left hand
+            for k in range(len(ns) + 1):  # lowest k notes -> left hand
                 ln, rn = ns[:k], ns[k:]
                 c = cost + _hand_cost(rh, t, rn, RIGHT, lh) + _hand_cost(lh, t, ln, LEFT, rh)
                 if repeat and k != pk:

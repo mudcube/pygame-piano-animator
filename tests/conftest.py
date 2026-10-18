@@ -3,6 +3,7 @@ Shared test setup: a headless pygame (SDL's dummy video/audio drivers), the
 project root on sys.path, and a throw-away pianists folder so tests never
 read or change your own saved pianists.
 """
+
 import os
 import sys
 
@@ -19,6 +20,7 @@ import pytest  # noqa: E402
 def isolate_pianists(folder):
     """Point pianist.py at `folder` (and forget the cached active pianist)."""
     import pianist
+
     pianist.FOLDER = folder
     pianist.SETTINGS = os.path.join(folder, "settings.json")
     pianist._active = None
@@ -33,6 +35,7 @@ def _pianists_tmp(tmp_path):
 @pytest.fixture
 def screen():
     import pygame
+
     pygame.init()
     surf = pygame.display.set_mode((1400, 860))
     yield surf

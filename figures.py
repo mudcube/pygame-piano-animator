@@ -33,6 +33,7 @@ planner in fingering.py pays `weight` for disagreeing with one, so a standard
 fingering wins unless the hand physically can't do it (a held note, a leap,
 the passage around it).
 """
+
 from __future__ import annotations
 
 import math
@@ -41,31 +42,72 @@ LEFT, RIGHT = "L", "R"
 BLACK = {1, 3, 6, 8, 10}
 
 # ----------------------------------------------------------------- keys
-PC = {'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7,
-      'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11}
+PC = {
+    "C": 0,
+    "C#": 1,
+    "Db": 1,
+    "D": 2,
+    "D#": 3,
+    "Eb": 3,
+    "E": 4,
+    "F": 5,
+    "F#": 6,
+    "Gb": 6,
+    "G": 7,
+    "G#": 8,
+    "Ab": 8,
+    "A": 9,
+    "A#": 10,
+    "Bb": 10,
+    "B": 11,
+}
 MAJOR = [0, 2, 4, 5, 7, 9, 11]
 HARM = [0, 2, 3, 5, 7, 8, 11]
 NAT = [0, 2, 3, 5, 7, 8, 10]
 MELU = [0, 2, 3, 5, 7, 9, 11]
-MAJ_NAME = {0: 'C', 1: 'Db', 2: 'D', 3: 'Eb', 4: 'E', 5: 'F', 6: 'F#', 7: 'G', 8: 'Ab', 9: 'A', 10: 'Bb', 11: 'B'}
-MIN_NAME = {0: 'C', 1: 'C#', 2: 'D', 3: 'Eb', 4: 'E', 5: 'F', 6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'Bb', 11: 'B'}
+MAJ_NAME = {0: "C", 1: "Db", 2: "D", 3: "Eb", 4: "E", 5: "F", 6: "F#", 7: "G", 8: "Ab", 9: "A", 10: "Bb", 11: "B"}
+MIN_NAME = {0: "C", 1: "C#", 2: "D", 3: "Eb", 4: "E", 5: "F", 6: "F#", 7: "G", 8: "G#", 9: "A", 10: "Bb", 11: "B"}
 
 # Scale thumb notes per key: (right hand, left hand) - standard fingerings, as in Hanon 39
 THUMBS = {
-    ('C', 'maj'): ('C F', 'C G'), ('G', 'maj'): ('G C', 'G D'), ('D', 'maj'): ('D G', 'D A'),
-    ('A', 'maj'): ('A D', 'A E'), ('E', 'maj'): ('E A', 'E B'), ('B', 'maj'): ('B E', 'B F#'),
-    ('F#', 'maj'): ('B F', 'B F'), ('Db', 'maj'): ('F C', 'F C'), ('Ab', 'maj'): ('C F', 'C G'),
-    ('Eb', 'maj'): ('F C', 'G D'), ('Bb', 'maj'): ('C F', 'D A'), ('F', 'maj'): ('F C', 'C F'),
-    ('A', 'min'): ('A D', 'A E'), ('E', 'min'): ('E A', 'E B'), ('B', 'min'): ('B E', 'B F#'),
-    ('F#', 'min'): ('A D', 'B F'), ('C#', 'min'): ('E A', 'E C'), ('G#', 'min'): ('B E', 'B G'),
-    ('Eb', 'min'): ('F B', 'F B'), ('Bb', 'min'): ('C F', 'C F'), ('F', 'min'): ('F C', 'C F'),
-    ('C', 'min'): ('C F', 'C G'), ('G', 'min'): ('G C', 'G D'), ('D', 'min'): ('D G', 'D A'),
+    ("C", "maj"): ("C F", "C G"),
+    ("G", "maj"): ("G C", "G D"),
+    ("D", "maj"): ("D G", "D A"),
+    ("A", "maj"): ("A D", "A E"),
+    ("E", "maj"): ("E A", "E B"),
+    ("B", "maj"): ("B E", "B F#"),
+    ("F#", "maj"): ("B F", "B F"),
+    ("Db", "maj"): ("F C", "F C"),
+    ("Ab", "maj"): ("C F", "C G"),
+    ("Eb", "maj"): ("F C", "G D"),
+    ("Bb", "maj"): ("C F", "D A"),
+    ("F", "maj"): ("F C", "C F"),
+    ("A", "min"): ("A D", "A E"),
+    ("E", "min"): ("E A", "E B"),
+    ("B", "min"): ("B E", "B F#"),
+    ("F#", "min"): ("A D", "B F"),
+    ("C#", "min"): ("E A", "E C"),
+    ("G#", "min"): ("B E", "B G"),
+    ("Eb", "min"): ("F B", "F B"),
+    ("Bb", "min"): ("C F", "C F"),
+    ("F", "min"): ("F C", "C F"),
+    ("C", "min"): ("C F", "C G"),
+    ("G", "min"): ("G C", "G D"),
+    ("D", "min"): ("D G", "D A"),
 }
 # melodic minors whose raised 6th/7th move the thumb going up (and back coming down)
-MEL_UP = {('Eb', 'min'): ('F C', 'F C'), ('G#', 'min'): ('B F', 'B G'), ('F#', 'min'): ('A D#', 'B F'),
-          ('C#', 'min'): ('E A#', 'E C')}
-MEL_DOWN = {('Eb', 'min'): ('F B', 'F B'), ('G#', 'min'): ('E B', 'B F#'), ('F#', 'min'): ('A D', 'B E'),
-            ('C#', 'min'): ('E A', 'E B')}
+MEL_UP = {
+    ("Eb", "min"): ("F C", "F C"),
+    ("G#", "min"): ("B F", "B G"),
+    ("F#", "min"): ("A D#", "B F"),
+    ("C#", "min"): ("E A#", "E C"),
+}
+MEL_DOWN = {
+    ("Eb", "min"): ("F B", "F B"),
+    ("G#", "min"): ("E B", "B F#"),
+    ("F#", "min"): ("A D", "B E"),
+    ("C#", "min"): ("E A", "E B"),
+}
 
 # Krumhansl-Kessler key profiles
 KK_MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
@@ -80,7 +122,7 @@ def key_scale(key, melodic=False):
     """(pitch classes going up, going down) of a key."""
     name, mode = key
     t = PC[name]
-    if mode == 'maj':
+    if mode == "maj":
         s = sorted((t + x) % 12 for x in MAJOR)
         return s, s
     if melodic:
@@ -105,12 +147,14 @@ def find_key(run_pcs, context_hist, first=None, last=None):
     """
     best = None
     for t in range(12):
-        for mode, prof in (('maj', KK_MAJ), ('min', KK_MIN)):
-            if mode == 'maj':
+        for mode, prof in (("maj", KK_MAJ), ("min", KK_MIN)):
+            if mode == "maj":
                 forms = [(set((t + x) % 12 for x in MAJOR), False)]
             else:
-                forms = [(set((t + x) % 12 for x in HARM), False),
-                         (set((t + x) % 12 for x in MELU) | set((t + x) % 12 for x in NAT), True)]
+                forms = [
+                    (set((t + x) % 12 for x in HARM), False),
+                    (set((t + x) % 12 for x in MELU) | set((t + x) % 12 for x in NAT), True),
+                ]
             for scale, mel in forms:
                 if not run_pcs <= scale:
                     continue
@@ -118,8 +162,8 @@ def find_key(run_pcs, context_hist, first=None, last=None):
                 s = _corr(context_hist, rot)
                 s += 0.15 * ((first == t) + (last == t))
                 if mel:
-                    s -= 0.05                       # prefer the plain harmonic form when both fit
-                name = MAJ_NAME[t] if mode == 'maj' else MIN_NAME[t]
+                    s -= 0.05  # prefer the plain harmonic form when both fit
+                name = MAJ_NAME[t] if mode == "maj" else MIN_NAME[t]
                 if best is None or s > best[0]:
                     best = (s, (name, mode), mel)
     return None if best is None else (best[1], best[2])
@@ -192,8 +236,8 @@ def scale_fingering(ps, thumbs_up, hand, thumbs_down, scales, opening=True):
 
 
 # ----------------------------------------------------------------- chromatic
-CHROM_R = {0: 2, 1: 3, 2: 1, 3: 3, 4: 1, 5: 2, 6: 3, 7: 1, 8: 3, 9: 1, 10: 3, 11: 1}   # 2 on C and F
-CHROM_L = {0: 1, 1: 3, 2: 1, 3: 3, 4: 2, 5: 1, 6: 3, 7: 1, 8: 3, 9: 1, 10: 3, 11: 2}   # 2 on E and B
+CHROM_R = {0: 2, 1: 3, 2: 1, 3: 3, 4: 1, 5: 2, 6: 3, 7: 1, 8: 3, 9: 1, 10: 3, 11: 1}  # 2 on C and F
+CHROM_L = {0: 1, 1: 3, 2: 1, 3: 3, 4: 2, 5: 1, 6: 3, 7: 1, 8: 3, 9: 1, 10: 3, 11: 2}  # 2 on E and B
 
 # A pianist's preferred fingerings for some figures (set by fingering.apply_pianist)
 DEFAULT_PREFS = {"chromatic": "13", "repeated": "321", "trill": "auto", "octaves": "4black"}
@@ -205,10 +249,10 @@ PREFS = dict(DEFAULT_PREFS)
 # "renumber" puts the thumb there and counts up to the next thumb, "thumb"
 # only puts the thumb there, None keeps the map.
 CHROM_MAPS = {
-    "12":    ({0: 2, 1: 3, 2: 1, 3: 2, 4: 1, 5: 2, 6: 3, 7: 1, 8: 2, 9: 1, 10: 2, 11: 1}, "renumber"),
-    "13":    (CHROM_R, "thumb"),
+    "12": ({0: 2, 1: 3, 2: 1, 3: 2, 4: 1, 5: 2, 6: 3, 7: 1, 8: 2, 9: 1, 10: 2, 11: 1}, "renumber"),
+    "13": (CHROM_R, "thumb"),
     "12345": ({0: 1, 1: 2, 2: 3, 3: 4, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 1, 10: 2, 11: 3}, None),
-    "231":   ({0: 2, 1: 3, 2: 1, 3: 2, 4: 3, 5: 1, 6: 2, 7: 1, 8: 2, 9: 3, 10: 4, 11: 1}, None),
+    "231": ({0: 2, 1: 3, 2: 1, 3: 2, 4: 3, 5: 1, 6: 2, 7: 1, 8: 2, 9: 3, 10: 4, 11: 1}, None),
 }
 
 
@@ -240,7 +284,7 @@ def chromatic_fingering(ps, hand):
         m = CHROM_L
     else:
         m = None
-    if m is not None:                                  # the classic maps, as tuned on Hanon
+    if m is not None:  # the classic maps, as tuned on Hanon
         f = [m[p % 12] for p in ps]
         n = len(ps)
         for i in range(n):
@@ -282,22 +326,40 @@ def _start_thumb(ps, f, hand, rule, cmap):
 # The book's root-position triad arpeggios: (RH {note: finger}, RH first
 # finger, LH {note: finger}, LH first finger) - Hanon 41
 ARP = {
-    ('C', 'maj'): ('C1 E2 G3', 1, 'C1 G2 E4', 5), ('A', 'min'): ('A1 C2 E3', 1, 'A1 E2 C4', 5),
-    ('F', 'maj'): ('F1 A2 C3', 1, 'F1 C2 A4', 5), ('D', 'min'): ('D1 F2 A3', 1, 'D1 A2 F4', 5),
-    ('Bb', 'maj'): ('D1 F2 Bb4', 2, 'F1 D2 Bb3', 3), ('G', 'min'): ('G1 Bb2 D3', 1, 'G1 D2 Bb4', 5),
-    ('Eb', 'maj'): ('G1 Bb2 Eb4', 2, 'G1 Eb2 Bb4', 3), ('C', 'min'): ('C1 Eb2 G3', 1, 'C1 G2 Eb4', 5),
-    ('Ab', 'maj'): ('C1 Eb2 Ab4', 2, 'C1 Ab2 Eb4', 3), ('F', 'min'): ('F1 Ab2 C3', 1, 'F1 C2 Ab4', 5),
-    ('Db', 'maj'): ('F1 Ab2 Db4', 2, 'F1 Db2 Ab4', 2), ('Bb', 'min'): ('F1 Bb2 Db3', 2, 'F1 Db2 Bb3', 3),
-    ('F#', 'maj'): ('F#1 Bb2 Db3', 1, 'F#1 Db2 Bb3', 5), ('Eb', 'min'): ('Eb1 F#2 Bb3', 1, 'Eb1 Bb2 F#4', 5),
-    ('B', 'maj'): ('B1 Eb2 F#3', 1, 'B1 F#2 Eb3', 5), ('G#', 'min'): ('B1 Eb2 G#4', 2, 'B1 G#2 Eb4', 3),
-    ('E', 'maj'): ('E1 G#2 B3', 1, 'E1 B2 G#3', 5), ('C#', 'min'): ('E1 G#2 C#4', 2, 'E1 C#2 G#4', 3),
-    ('A', 'maj'): ('A1 C#2 E3', 1, 'A1 E2 C#3', 5), ('F#', 'min'): ('A1 C#2 F#4', 2, 'A1 F#2 C#4', 3),
-    ('D', 'maj'): ('D1 F#2 A3', 1, 'D1 A2 F#3', 5), ('B', 'min'): ('B1 D2 F#3', 1, 'B1 F#2 D4', 5),
-    ('G', 'maj'): ('G1 B2 D3', 1, 'G1 D2 B4', 5), ('E', 'min'): ('E1 G2 B3', 1, 'E1 B2 G4', 5),
+    ("C", "maj"): ("C1 E2 G3", 1, "C1 G2 E4", 5),
+    ("A", "min"): ("A1 C2 E3", 1, "A1 E2 C4", 5),
+    ("F", "maj"): ("F1 A2 C3", 1, "F1 C2 A4", 5),
+    ("D", "min"): ("D1 F2 A3", 1, "D1 A2 F4", 5),
+    ("Bb", "maj"): ("D1 F2 Bb4", 2, "F1 D2 Bb3", 3),
+    ("G", "min"): ("G1 Bb2 D3", 1, "G1 D2 Bb4", 5),
+    ("Eb", "maj"): ("G1 Bb2 Eb4", 2, "G1 Eb2 Bb4", 3),
+    ("C", "min"): ("C1 Eb2 G3", 1, "C1 G2 Eb4", 5),
+    ("Ab", "maj"): ("C1 Eb2 Ab4", 2, "C1 Ab2 Eb4", 3),
+    ("F", "min"): ("F1 Ab2 C3", 1, "F1 C2 Ab4", 5),
+    ("Db", "maj"): ("F1 Ab2 Db4", 2, "F1 Db2 Ab4", 2),
+    ("Bb", "min"): ("F1 Bb2 Db3", 2, "F1 Db2 Bb3", 3),
+    ("F#", "maj"): ("F#1 Bb2 Db3", 1, "F#1 Db2 Bb3", 5),
+    ("Eb", "min"): ("Eb1 F#2 Bb3", 1, "Eb1 Bb2 F#4", 5),
+    ("B", "maj"): ("B1 Eb2 F#3", 1, "B1 F#2 Eb3", 5),
+    ("G#", "min"): ("B1 Eb2 G#4", 2, "B1 G#2 Eb4", 3),
+    ("E", "maj"): ("E1 G#2 B3", 1, "E1 B2 G#3", 5),
+    ("C#", "min"): ("E1 G#2 C#4", 2, "E1 C#2 G#4", 3),
+    ("A", "maj"): ("A1 C#2 E3", 1, "A1 E2 C#3", 5),
+    ("F#", "min"): ("A1 C#2 F#4", 2, "A1 F#2 C#4", 3),
+    ("D", "maj"): ("D1 F#2 A3", 1, "D1 A2 F#3", 5),
+    ("B", "min"): ("B1 D2 F#3", 1, "B1 F#2 D4", 5),
+    ("G", "maj"): ("G1 B2 D3", 1, "G1 D2 B4", 5),
+    ("E", "min"): ("E1 G2 B3", 1, "E1 B2 G4", 5),
 }
-TRIADS = {(0, 4, 7): 'maj', (0, 3, 7): 'min', (0, 3, 6): 'dim', (0, 4, 8): 'aug'}
-SEVENTHS = {(0, 4, 7, 10): 'dom7', (0, 4, 7, 11): 'maj7', (0, 3, 7, 10): 'min7',
-            (0, 3, 6, 9): 'dim7', (0, 3, 6, 10): 'hdim7', (0, 3, 7, 11): 'minmaj7'}
+TRIADS = {(0, 4, 7): "maj", (0, 3, 7): "min", (0, 3, 6): "dim", (0, 4, 8): "aug"}
+SEVENTHS = {
+    (0, 4, 7, 10): "dom7",
+    (0, 4, 7, 11): "maj7",
+    (0, 3, 7, 10): "min7",
+    (0, 3, 6, 9): "dim7",
+    (0, 3, 6, 10): "hdim7",
+    (0, 3, 7, 11): "minmaj7",
+}
 
 
 def chord_of(pcs):
@@ -334,7 +396,7 @@ def _cyclic_cost(order_pcs, fmap, rh_frame_up):
         a, b = fs[k], fs[k + 1]
         lim = comfy.get((a, b), 4)
         c += 0.6 * max(0, ivs[k] - lim)
-    cross = ivs[-1]                             # last finger -> thumb, an octave on
+    cross = ivs[-1]  # last finger -> thumb, an octave on
     c += 0.5 * max(0, cross - 3) + (0.8 if cross > 5 else 0.0)
     if order_pcs[0] in BLACK:
         c += 1.5
@@ -371,9 +433,20 @@ def arpeggio_map(pcs_order, hand, vp):
 # ----------------------------------------------------------------- double notes
 CHROM3_R = [(1, 3), (2, 4), (1, 3), (2, 4), (3, 5), (1, 3), (2, 4), (1, 3), (2, 4), (1, 3), (2, 4), (3, 5)]
 CHROM3_L = [(4, 2), (3, 1), (5, 3), (4, 2), (3, 1), (4, 2), (3, 1), (4, 2), (3, 1), (5, 3), (4, 2), (3, 1)]
-THIRDS_4GROUP = {('C', 'maj'): 'C', ('G', 'maj'): 'G', ('D', 'maj'): 'D', ('A', 'maj'): 'D',
-                 ('E', 'maj'): 'A', ('F', 'maj'): 'F', ('Bb', 'maj'): 'C', ('Eb', 'maj'): 'F',
-                 ('Ab', 'maj'): 'Bb', ('A', 'min'): 'A', ('D', 'min'): 'G', ('G', 'min'): 'C'}
+THIRDS_4GROUP = {
+    ("C", "maj"): "C",
+    ("G", "maj"): "G",
+    ("D", "maj"): "D",
+    ("A", "maj"): "D",
+    ("E", "maj"): "A",
+    ("F", "maj"): "F",
+    ("Bb", "maj"): "C",
+    ("Eb", "maj"): "F",
+    ("Ab", "maj"): "Bb",
+    ("A", "min"): "A",
+    ("D", "min"): "G",
+    ("G", "min"): "C",
+}
 T4R = [(1, 2), (1, 3), (2, 4), (3, 5)]
 T3R = [(1, 3), (2, 4), (3, 5)]
 T4L = [(5, 3), (4, 2), (3, 1), (2, 1)]
@@ -403,8 +476,8 @@ def octave_pair(lo, hi, hand):
 W_SCALE, W_CHROM, W_ARP, W_OCT, W_THIRDS, W_SIXTHS, W_REP, W_TRILL = 0.75, 3.0, 2.5, 4.0, 3.0, 2.0, 1.5, 2.0
 # a quick repeated pair before an outward leap (2-1 then 5)
 W_REP_LEAP = 25.0
-W_REP_RUN = 6.0             # runs of 3+ quick repeats (Hanon 44-47)
-GAP = 0.6              # notes further apart than this don't belong to one figure
+W_REP_RUN = 6.0  # runs of 3+ quick repeats (Hanon 44-47)
+GAP = 0.6  # notes further apart than this don't belong to one figure
 
 
 def _hist(notes, t0, t1):
@@ -432,7 +505,7 @@ def detect(groups, hand, context=None, vpitch=None):
                 out[id(n)] = (f, w)
 
     # ---------------- single-note figures
-    singles = []            # runs of consecutive single-note groups (no big time gaps)
+    singles = []  # runs of consecutive single-note groups (no big time gaps)
     cur = []
     for gi, (t, ns) in enumerate(groups):
         if len(ns) == 1 and (not cur or t - groups[cur[-1]][0] <= GAP):
@@ -498,7 +571,7 @@ def detect(groups, hand, context=None, vpitch=None):
     return out
 
 
-INNER_HELD_T = 0.05     # a note counts as held if it lasts this far past the octave's onset
+INNER_HELD_T = 0.05  # a note counts as held if it lasts this far past the octave's onset
 INNER_LOOKBACK_T = 4.0  # s, how far back held notes are looked for
 
 
@@ -551,7 +624,7 @@ def _repeated_and_trills(notes, ps, ts, hand, put):
                 # the planner's (learned) dislike of changing finger on one key
                 w = W_REP_RUN if L >= 3 else W_REP
                 if style != "321":
-                    w *= 1.5                                        # the pianist asked for this one
+                    w *= 1.5  # the pianist asked for this one
                 for k in range(L):
                     put(notes[i + k], cyc[k % len(cyc)], w)
             i = j + 1
@@ -565,14 +638,14 @@ def _repeated_and_trills(notes, ps, ts, hand, put):
             j = i + 1
             while j + 1 < n and ps[j + 1] == ps[j - 1] and ts[j + 1] - ts[j] < 0.2:
                 j += 1
-            if j - i + 1 >= 6:                    # shorter shakes belong to the figure around them
+            if j - i + 1 >= 6:  # shorter shakes belong to the figure around them
                 lo, hi = min(a, b), max(a, b)
                 style = PREFS.get("trill", "auto")
                 if style == "auto":
                     # any strong pair (1-2, 1-3, 2-3, 2-4) will do - just not the weak 4-5
                     low_f, high_f = frozenset((1, 2, 3)), frozenset((2, 3, 4))
                     if hand == LEFT:
-                        low_f, high_f = high_f, low_f          # the LH's thumb is on top
+                        low_f, high_f = high_f, low_f  # the LH's thumb is on top
                     for k in range(i, j + 1):
                         put(notes[k], low_f if ps[k] == lo else high_f, W_TRILL)
                 else:
@@ -637,7 +710,7 @@ def _stepwise(notes, ps, ts, hand, context, put):
                 if chrom[q]:
                     put(notes[seg[q]], next(it), W_CHROM)
         if best < 6:
-            continue                              # a five-finger pattern: leave it to the planner
+            continue  # a five-finger pattern: leave it to the planner
         # diatonic stretches (the rest)
         blocks, b = [], []
         for q in range(len(seg)):
@@ -681,9 +754,12 @@ def _arpeggios(notes, ps, hand, vp, put):
     while i < n - 2:
         j = i
         # thirds and fourths (and the step from a seventh to the root)
-        while j + 1 < n and 1 <= abs(ps[j + 1] - ps[j]) <= 5 and \
-                len(set(p % 12 for p in ps[i:j + 2])) <= 4 and \
-                (abs(ps[j + 1] - ps[j]) >= 3 or len(set(p % 12 for p in ps[i:j + 2])) == 4):
+        while (
+            j + 1 < n
+            and 1 <= abs(ps[j + 1] - ps[j]) <= 5
+            and len(set(p % 12 for p in ps[i : j + 2])) <= 4
+            and (abs(ps[j + 1] - ps[j]) >= 3 or len(set(p % 12 for p in ps[i : j + 2])) == 4)
+        ):
             j += 1
         if j - i >= 3:
             seg = list(range(i, j + 1))
@@ -691,10 +767,10 @@ def _arpeggios(notes, ps, hand, vp, put):
             pcs = set(p % 12 for p in sp)
             ch = chord_of(pcs) if 3 <= len(pcs) <= 4 else None
             span = max(sp) - min(sp)
-            if ch and span > 13:                  # an octave fits the hand: no crossing needed
+            if ch and span > 13:  # an octave fits the hand: no crossing needed
                 root, kind = ch
-                if kind in ('dim7', 'aug', 'dim') and sp[0] % 12 in pcs:
-                    root = sp[0] % 12                # symmetric chords: the root is where it starts
+                if kind in ("dim7", "aug", "dim") and sp[0] % 12 in pcs:
+                    root = sp[0] % 12  # symmetric chords: the root is where it starts
                 fs = _arp_fingers(sp, hand, root, kind, pcs, vp)
                 if fs:
                     for k, f in zip(seg, fs):
@@ -707,9 +783,9 @@ def _arpeggios(notes, ps, hand, vp, put):
 def _arp_fingers(sp, hand, root, kind, pcs, vp):
     n = len(sp)
     fmap, start = None, None
-    if kind in ('maj', 'min'):
-        name = (MAJ_NAME if kind == 'maj' else MIN_NAME)[root]
-        alt = {'Db': 'C#', 'C#': 'Db', 'F#': 'Gb', 'Eb': 'D#', 'Ab': 'G#', 'G#': 'Ab', 'Bb': 'A#'}
+    if kind in ("maj", "min"):
+        name = (MAJ_NAME if kind == "maj" else MIN_NAME)[root]
+        alt = {"Db": "C#", "C#": "Db", "F#": "Gb", "Eb": "D#", "Ab": "G#", "G#": "Ab", "Bb": "A#"}
         key = (name, kind) if (name, kind) in ARP else (alt.get(name, name), kind)
         if key in ARP and sp[0] % 12 == root:
             rh, rs, lh, ls = ARP[key]
@@ -728,14 +804,14 @@ def _arp_fingers(sp, hand, root, kind, pcs, vp):
         peak = 0 < i < n - 1 and sp[i - 1] < sp[i] > sp[i + 1] or (i == n - 1 and n > 1 and sp[i] > sp[i - 1])
         low = 0 < i < n - 1 and sp[i - 1] > sp[i] < sp[i + 1] or (i == n - 1 and n > 1 and sp[i] < sp[i - 1])
         if hand == RIGHT and peak and f[i] == 1:
-            f[i] = 5                               # top of the arpeggio: no thumb up there
+            f[i] = 5  # top of the arpeggio: no thumb up there
         if hand == LEFT and low and f[i] == 1:
             f[i] = 5
     rising = n > 1 and sp[1] > sp[0]
     if start is not None and rising:
         f[0] = start
     elif n > 1 and f[0] == 1 and ((hand == RIGHT and not rising) or (hand == LEFT and rising)):
-        f[0] = 5                                   # starting from the top (RH) / bottom (LH)
+        f[0] = 5  # starting from the top (RH) / bottom (LH)
     return f
 
 
@@ -748,12 +824,12 @@ def _broken_octaves(notes, ps, hand, put):
 
     for i, p in enumerate(ps):
         if repeated(i):
-            continue            # quick repeats on one key: the repeated-note rule fingers them
+            continue  # quick repeats on one key: the repeated-note rule fingers them
         nb = [k for k in (i - 1, i + 1) if 0 <= k < n]
         if any(ps[k] - p == 12 for k in nb):
-            role = 'low'
+            role = "low"
         elif any(p - ps[k] == 12 for k in nb):
-            role = 'high'
+            role = "high"
         else:
             continue
         black = p % 12 in BLACK
@@ -762,9 +838,9 @@ def _broken_octaves(notes, ps, hand, put):
         partner_rep = any(abs(ps[k] - p) == 12 and repeated(k) for k in nb)
         outer = 5 if (partner_rep or not black) else 4
         if hand == RIGHT:
-            f = 1 if role == 'low' else outer
+            f = 1 if role == "low" else outer
         else:
-            f = outer if role == 'low' else 1
+            f = outer if role == "low" else 1
         put(notes[i], f, W_OCT * 0.8)
 
 
@@ -778,8 +854,12 @@ def _double_notes(pairs, hand, context, put):
     while i < n:
         if ivs[i] in (3, 4):
             j = i
-            while (j + 1 < n and ivs[j + 1] in (3, 4) and abs(lows[j + 1] - lows[j]) == 1
-                   and (j == i or lows[j + 1] - lows[j] == lows[j] - lows[j - 1])):
+            while (
+                j + 1 < n
+                and ivs[j + 1] in (3, 4)
+                and abs(lows[j + 1] - lows[j]) == 1
+                and (j == i or lows[j + 1] - lows[j] == lows[j] - lows[j - 1])
+            ):
                 j += 1
             if j - i >= 3:
                 tab = CHROM3_R if hand == RIGHT else CHROM3_L
@@ -796,15 +876,19 @@ def _double_notes(pairs, hand, context, put):
     while i < n:
         if ivs[i] in (3, 4):
             j = i
-            while (j + 1 < n and ivs[j + 1] in (3, 4) and 1 <= abs(lows[j + 1] - lows[j]) <= 2
-                   and (j == i or (lows[j + 1] > lows[j]) == (lows[j] > lows[j - 1]))):
+            while (
+                j + 1 < n
+                and ivs[j + 1] in (3, 4)
+                and 1 <= abs(lows[j + 1] - lows[j]) <= 2
+                and (j == i or (lows[j + 1] > lows[j]) == (lows[j] > lows[j - 1]))
+            ):
                 j += 1
             if j - i >= 3:
                 seg = range(i, j + 1)
                 pcs = set(pairs[k][0].pitch % 12 for k in seg) | set(pairs[k][1].pitch % 12 for k in seg)
                 hist = _hist(context, pairs[i][0].start - 2, pairs[j][0].start + 2)
                 k = find_key(pcs, hist)
-                if k and k[0][1] in ('maj', 'min'):
+                if k and k[0][1] in ("maj", "min"):
                     key = k[0]
                     up, _ = key_scale(key, False)
                     tonic = PC[key[0]]
@@ -816,10 +900,9 @@ def _double_notes(pairs, hand, context, put):
                         if pc not in scale:
                             continue
                         kk = (scale.index(pc) - g4) % 7
-                        fl, fh = ((T4R if hand == RIGHT else T4L)[kk] if kk < 4
-                                  else (T3R if hand == RIGHT else T3L)[kk - 4])
-                        put(a, fl, W_THIRDS * 1.7)     # the crossings this needs look
-                        put(b, fh, W_THIRDS * 1.7)     # awkward note by note: insist
+                        fl, fh = (T4R if hand == RIGHT else T4L)[kk] if kk < 4 else (T3R if hand == RIGHT else T3L)[kk - 4]
+                        put(a, fl, W_THIRDS * 1.7)  # the crossings this needs look
+                        put(b, fh, W_THIRDS * 1.7)  # awkward note by note: insist
                 i = j + 1
                 continue
         i += 1
@@ -873,8 +956,7 @@ def _double_notes(pairs, hand, context, put):
     # --- trills in sixths / fourths: two dyads alternating
     i = 0
     while i + 3 < n:
-        if ivs[i] in (5, 6, 8, 9) and ivs[i + 1] in (5, 6, 8, 9) and lows[i] != lows[i + 1] \
-                and abs(lows[i] - lows[i + 1]) <= 2:
+        if ivs[i] in (5, 6, 8, 9) and ivs[i + 1] in (5, 6, 8, 9) and lows[i] != lows[i + 1] and abs(lows[i] - lows[i + 1]) <= 2:
             j = i + 1
             while j + 1 < n and lows[j + 1] == lows[j - 1] and ivs[j + 1] == ivs[j - 1]:
                 j += 1

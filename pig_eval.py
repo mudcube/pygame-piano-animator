@@ -21,6 +21,7 @@ The dataset is free for research use; download it from
 https://beam.kisarazu.ac.jp/research/PianoFingeringDataset/ after agreeing
 to its terms.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -83,8 +84,10 @@ def evaluate(folder, pianist=None, pieces=None, verbose=True):
         rows.append((pid, len(fs), res))
         if verbose and None in res:
             g, hi, so = res[None]
-            print(f"{pid}  {len(fs)} pianist(s)  general {100 * g:5.1f}%  high {100 * hi:5.1f}%  "
-                  f"soft {100 * so:5.1f}%", flush=True)
+            print(
+                f"{pid}  {len(fs)} pianist(s)  general {100 * g:5.1f}%  high {100 * hi:5.1f}%  soft {100 * so:5.1f}%",
+                flush=True,
+            )
     print()
     for hand, label in ((RIGHT, "right hand"), (LEFT, "left hand"), (None, "both hands")):
         vals = [r[2][hand] for r in rows if hand in r[2]]
@@ -92,8 +95,9 @@ def evaluate(folder, pianist=None, pieces=None, verbose=True):
             g = sum(v[0] for v in vals) / len(vals)
             hi = sum(v[1] for v in vals) / len(vals)
             so = sum(v[2] for v in vals) / len(vals)
-            print(f"{label:11s}  general {100 * g:5.1f}%   high {100 * hi:5.1f}%   soft {100 * so:5.1f}%"
-                  f"   ({len(vals)} pieces)")
+            print(
+                f"{label:11s}  general {100 * g:5.1f}%   high {100 * hi:5.1f}%   soft {100 * so:5.1f}%   ({len(vals)} pieces)"
+            )
     print(f"time {time.time() - t0:.0f}s")
     return rows
 
@@ -106,6 +110,7 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="only print the summary")
     a = ap.parse_args()
     import pianist as pianists
+
     p = None
     if a.pianist:
         match = [q for q in pianists.list_pianists() if q.name.lower() == a.pianist.lower()]

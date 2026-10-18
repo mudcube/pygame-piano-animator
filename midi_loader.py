@@ -14,6 +14,7 @@ Typical use:
 
 Run this file directly to print a summary:  python midi_loader.py song.mid
 """
+
 from __future__ import annotations
 
 import bisect
@@ -25,7 +26,7 @@ from typing import List, Optional
 
 import pretty_midi
 
-LOWEST_PIANO_KEY = 21    # A0
+LOWEST_PIANO_KEY = 21  # A0
 HIGHEST_PIANO_KEY = 108  # C8
 MIDDLE_C = 60
 
@@ -51,13 +52,13 @@ def note_name(pitch: int) -> str:
 
 @dataclass(frozen=True)
 class Note:
-    pitch: int        # MIDI note number, 21..108 on an 88-key piano
-    start: float      # seconds
-    end: float        # seconds
-    velocity: int     # 1..127
-    track: int        # index of the instrument/track it came from
-    hand: str         # LEFT or RIGHT (from track names/registers, else hand_split.py)
-    finger: Optional[int] = None   # 1..5 when the file carries fingering (see below)
+    pitch: int  # MIDI note number, 21..108 on an 88-key piano
+    start: float  # seconds
+    end: float  # seconds
+    velocity: int  # 1..127
+    track: int  # index of the instrument/track it came from
+    hand: str  # LEFT or RIGHT (from track names/registers, else hand_split.py)
+    finger: Optional[int] = None  # 1..5 when the file carries fingering (see below)
 
     @property
     def duration(self) -> float:
@@ -76,9 +77,9 @@ class Note:
 class TrackInfo:
     index: int
     name: str
-    program: int              # General MIDI program (0 = acoustic grand)
+    program: int  # General MIDI program (0 = acoustic grand)
     note_count: int
-    hand: Optional[str]       # LEFT/RIGHT if the whole track is one hand, else None
+    hand: Optional[str]  # LEFT/RIGHT if the whole track is one hand, else None
 
 
 def pedal_switches(controls):
@@ -95,9 +96,16 @@ def pedal_switches(controls):
 class MidiSong:
     """A loaded song: sorted notes plus fast queries by time."""
 
-    def __init__(self, notes: List[Note], tracks: List[TrackInfo], duration: float,
-                 bar_times: List[float], beat_times: List[float], path: Optional[str] = None,
-                 controls: Optional[list] = None):
+    def __init__(
+        self,
+        notes: List[Note],
+        tracks: List[TrackInfo],
+        duration: float,
+        bar_times: List[float],
+        beat_times: List[float],
+        path: Optional[str] = None,
+        controls: Optional[list] = None,
+    ):
         self.notes: List[Note] = sorted(notes, key=lambda n: (n.start, n.pitch))
         # pedals: [(time, controller, value)] for sustain (64), sostenuto (66), soft (67).
         # Performance recordings (MAESTRO, Disklavier) send the pedal's exact
@@ -146,7 +154,7 @@ class MidiSong:
     def control_state(self, t: float) -> dict:
         """{controller: value} in force at time t (0 for pedals not yet pressed)."""
         state = {c: 0 for c in PEDALS}
-        for _, c, v in self.controls[:bisect.bisect_right(self._control_times, t)]:
+        for _, c, v in self.controls[: bisect.bisect_right(self._control_times, t)]:
             state[c] = v
         return state
 
@@ -163,6 +171,7 @@ class MidiSong:
 # --------------------------------------------------------------------------- #
 # Loading
 # --------------------------------------------------------------------------- #
+
 
 def _hand_from_name(name: str) -> Optional[str]:
     """Recognise track names like 'Right Hand', 'RH', 'Piano L', 'Left'."""
@@ -194,10 +203,13 @@ def _fit_to_piano(pitch: int) -> int:
 #   "R1".."R5", "L1".."L5"   hand and finger (written by the fingering editor)
 #   "R", "L"                 hand only
 
+
 def _vlq(d, i):
     n = 0
     while True:
-        b = d[i]; i += 1; n = (n << 7) | (b & 0x7F)
+        b = d[i]
+        i += 1
+        n = (n << 7) | (b & 0x7F)
         if not b & 0x80:
             return n, i
 
@@ -213,24 +225,24 @@ def _write_vlq(n):
 
 def _marker(data):
     """(hand, finger) for a fingering text event's bytes, or None."""
-    if len(data) == 2 and data[:1] in (b'F', b'R', b'L') and data[1:2] in b'12345':
+    if len(data) == 2 and data[:1] in (b"F", b"R", b"L") and data[1:2] in b"12345":
         h = data[:1].decode()
-        return (None if h == 'F' else h, int(data[1:2]))
-    if data in (b'R', b'L'):
+        return (None if h == "F" else h, int(data[1:2]))
+    if data in (b"R", b"L"):
         return (data.decode(), None)
     return None
 
 
 def _chunks(d):
     """(header bytes, [(chunk type, chunk bytes)]) of a standard MIDI file."""
-    if d[:4] != b'MThd':
+    if d[:4] != b"MThd":
         raise ValueError("not a standard MIDI file")
-    hl = struct.unpack('>I', d[4:8])[0]
-    header = d[8:8 + hl]
+    hl = struct.unpack(">I", d[4:8])[0]
+    header = d[8 : 8 + hl]
     i, out = 8 + hl, []
     while i + 8 <= len(d):
-        typ, n = d[i:i + 4], struct.unpack('>I', d[i + 4:i + 8])[0]
-        out.append((typ, d[i + 8:i + 8 + n]))
+        typ, n = d[i : i + 4], struct.unpack(">I", d[i + 4 : i + 8])[0]
+        out.append((typ, d[i + 8 : i + 8 + n]))
         i += 8 + n
     return header, out
 
@@ -251,12 +263,12 @@ def _events(td):
         if b == 0xFF:
             typ = td[j + 1]
             ln, k = _vlq(td, j + 2)
-            out.append((t, 'meta', (typ, td[k:k + ln])))
+            out.append((t, "meta", (typ, td[k : k + ln])))
             j = k + ln
             continue
         if b in (0xF0, 0xF7):
             ln, k = _vlq(td, j + 1)
-            out.append((t, 'sysex', td[j:k + ln]))
+            out.append((t, "sysex", td[j : k + ln]))
             j = k + ln
             continue
         if b & 0x80:
@@ -265,7 +277,7 @@ def _events(td):
         if run is None:
             raise ValueError("MIDI data without a status byte")
         n = 1 if run & 0xF0 in (0xC0, 0xD0) else 2
-        out.append((t, 'midi', bytes([run]) + td[j:j + n]))
+        out.append((t, "midi", bytes([run]) + td[j : j + n]))
         j += n
     return out
 
@@ -277,7 +289,7 @@ def _encode(events):
     for t, kind, p in events:
         out += _write_vlq(t - last)
         last = t
-        if kind == 'meta':
+        if kind == "meta":
             typ, data = p
             out += bytes([0xFF, typ]) + _write_vlq(len(data)) + data
         else:
@@ -289,21 +301,21 @@ def read_markers(path: str) -> dict:
     """{(tick, pitch): (hand or None, finger or None)} for every marked note-on."""
     out = {}
     try:
-        _, chunks = _chunks(open(path, 'rb').read())
+        _, chunks = _chunks(open(path, "rb").read())
         for typ, td in chunks:
-            if typ != b'MTrk':
+            if typ != b"MTrk":
                 continue
             pending = None
             for t, kind, p in _events(td):
-                if kind == 'meta':
+                if kind == "meta":
                     if p[0] == 0x01:
                         pending = _marker(p[1]) or pending
                     continue
-                if kind == 'midi' and p[0] & 0xF0 == 0x90 and p[2] > 0:
+                if kind == "midi" and p[0] & 0xF0 == 0x90 and p[2] > 0:
                     if pending:
                         out[(t, p[1])] = pending
                     pending = None
-    except Exception:           # unreadable/odd file: just no fingering
+    except Exception:  # unreadable/odd file: just no fingering
         return {}
     return out
 
@@ -315,17 +327,17 @@ def read_fingering(path: str) -> dict:
 
 def _tempo_map(header, chunks):
     """A function tick -> seconds for this file (the same maths pretty_midi uses)."""
-    division = struct.unpack('>h', header[4:6])[0]
-    if division < 0:                                    # SMPTE time code
+    division = struct.unpack(">h", header[4:6])[0]
+    if division < 0:  # SMPTE time code
         fps, tpf = -(division >> 8), division & 0xFF
         return lambda tick: tick / (fps * tpf)
     # Like pretty_midi: tempo changes come from the first track only, and one
     # at tick 0 replaces the default 120 bpm.
     tempos = [(0, 500000)]
-    tracks = [td for typ, td in chunks if typ == b'MTrk']
-    for t, kind, p in (_events(tracks[0]) if tracks else []):
-        if kind == 'meta' and p[0] == 0x51:
-            us = int.from_bytes(p[1], 'big')
+    tracks = [td for typ, td in chunks if typ == b"MTrk"]
+    for t, kind, p in _events(tracks[0]) if tracks else []:
+        if kind == "meta" and p[0] == 0x51:
+            us = int.from_bytes(p[1], "big")
             if t == 0:
                 tempos = [(0, us)]
             elif us != tempos[-1][1]:
@@ -341,6 +353,7 @@ def _tempo_map(header, chunks):
     def to_sec(tick):
         i = bisect.bisect_right(starts, tick) - 1
         return secs[i] + (tick - starts[i]) * tempos[i][1] / 1e6 / division
+
     return to_sec
 
 
@@ -352,7 +365,7 @@ def save_fingered_midi(src_path: str, dst_path: str, notes, fingers) -> int:
     `notes` are the loaded Note objects (with the hand to store) and `fingers`
     maps id(note) -> finger (or None). Returns how many notes were marked.
     """
-    header, chunks = _chunks(open(src_path, 'rb').read())
+    header, chunks = _chunks(open(src_path, "rb").read())
     to_sec = _tempo_map(header, chunks)
     # loaded notes by (pitch, start in ms); the loader shifts out-of-range
     # pitches by octaves, so look them up the same way
@@ -370,35 +383,34 @@ def save_fingered_midi(src_path: str, dst_path: str, notes, fingers) -> int:
         return None
 
     marked = 0
-    out = bytearray(b'MThd' + struct.pack('>I', len(header)) + header)
+    out = bytearray(b"MThd" + struct.pack(">I", len(header)) + header)
     for typ, td in chunks:
-        if typ != b'MTrk':
-            out += typ + struct.pack('>I', len(td)) + td
+        if typ != b"MTrk":
+            out += typ + struct.pack(">I", len(td)) + td
             continue
         new = []
         for ev in _events(td):
             t, kind, p = ev
-            if kind == 'meta' and p[0] == 0x01 and _marker(p[1]):
-                continue                                  # old fingering: replaced below
-            if kind == 'midi' and p[0] & 0xF0 == 0x90 and p[2] > 0:
+            if kind == "meta" and p[0] == 0x01 and _marker(p[1]):
+                continue  # old fingering: replaced below
+            if kind == "midi" and p[0] & 0xF0 == 0x90 and p[2] > 0:
                 n = find(p[1], to_sec(t))
                 if n is not None:
                     f = fingers.get(id(n))
                     text = (n.hand + (str(f) if f else "")).encode()
-                    new.append((t, 'meta', (0x01, text)))
+                    new.append((t, "meta", (0x01, text)))
                     marked += 1
             new.append(ev)
         data = _encode(new)
-        out += b'MTrk' + struct.pack('>I', len(data)) + data
+        out += b"MTrk" + struct.pack(">I", len(data)) + data
     tmp = dst_path + ".tmp"
-    with open(tmp, 'wb') as fh:
+    with open(tmp, "wb") as fh:
         fh.write(out)
     os.replace(tmp, dst_path)
     return marked
 
 
-def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_C,
-              min_duration: float = 0.05) -> MidiSong:
+def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_C, min_duration: float = 0.05) -> MidiSong:
     """
     Load a MIDI file.
 
@@ -412,8 +424,7 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
     """
     pm = pretty_midi.PrettyMIDI(path)
 
-    instruments = [(i, inst) for i, inst in enumerate(pm.instruments)
-                   if inst.notes and (include_drums or not inst.is_drum)]
+    instruments = [(i, inst) for i, inst in enumerate(pm.instruments) if inst.notes and (include_drums or not inst.is_drum)]
 
     # Decide which hand each track belongs to.
     #   1. If every track is named like "Right Hand" / "LH", the names win.
@@ -443,8 +454,7 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
             mark_hand, finger = marks.get((round(float(n.start), 4), n.pitch), (None, None))
             pitch = _fit_to_piano(n.pitch)
             end = max(n.end, n.start + min_duration)
-            notes.append(Note(pitch, float(n.start), float(end), int(n.velocity), i,
-                              mark_hand or track_hand.get(i), finger))
+            notes.append(Note(pitch, float(n.start), float(end), int(n.velocity), i, mark_hand or track_hand.get(i), finger))
         tracks.append(TrackInfo(i, inst.name or f"Track {i}", inst.program, len(inst.notes), track_hand.get(i)))
 
     # Notes whose track doesn't say which hand: work it out from the music.
@@ -452,6 +462,7 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
     if loose:
         try:
             from hand_split import split_hands
+
             hands = split_hands(loose)
         except ImportError:
             hands = {id(n): (LEFT if n.pitch < split_pitch else RIGHT) for n in loose}
@@ -464,7 +475,7 @@ def load_midi(path: str, include_drums: bool = False, split_pitch: int = MIDDLE_
         bar_times, beat_times = [], []
 
     controls = []
-    for inst in pm.instruments:                   # a pedal may sit on a track of its own
+    for inst in pm.instruments:  # a pedal may sit on a track of its own
         if inst.is_drum:
             continue
         for cc in getattr(inst, "control_changes", []):
@@ -494,6 +505,7 @@ def is_pig(path: str) -> bool:
 
 def pig_pitch(name: str) -> int:
     import re
+
     m = re.match(r"^([A-Ga-g])([#b-]*)(-?\d+)$", name.strip())
     if not m:
         raise ValueError(f"bad pitch name {name!r}")
@@ -526,9 +538,11 @@ def read_pig(path: str, with_fingering: bool = True) -> MidiSong:
                 finger = int(f) if f in ("1", "2", "3", "4", "5") else None
             hand = LEFT if channel == 1 else RIGHT
             notes.append(Note(pitch, onset, max(offset, onset + 0.05), vel, channel, hand, finger))
-    tracks = [TrackInfo(c, name, 0, sum(1 for n in notes if n.track == c), h)
-              for c, name, h in ((0, "Right hand", RIGHT), (1, "Left hand", LEFT))
-              if any(n.track == c for n in notes)]
+    tracks = [
+        TrackInfo(c, name, 0, sum(1 for n in notes if n.track == c), h)
+        for c, name, h in ((0, "Right hand", RIGHT), (1, "Left hand", LEFT))
+        if any(n.track == c for n in notes)
+    ]
     duration = max((n.end for n in notes), default=0.0)
     return MidiSong(notes, tracks, duration, [], [], path)
 
@@ -543,8 +557,7 @@ def save_pig(path: str, notes, fingers) -> int:
             left = n.hand == LEFT
             f = fingers.get(id(n))
             fs = "_" if not f else str(-f if left else f)
-            fh.write(f"{i}\t{n.start:.6f}\t{n.end:.6f}\t{pig_name(n.pitch)}\t{n.velocity}\t80\t"
-                     f"{1 if left else 0}\t{fs}\n")
+            fh.write(f"{i}\t{n.start:.6f}\t{n.end:.6f}\t{pig_name(n.pitch)}\t{n.velocity}\t80\t{1 if left else 0}\t{fs}\n")
     os.replace(tmp, path)
     return len(rows)
 
@@ -560,8 +573,10 @@ if __name__ == "__main__":
         sys.exit(1)
     song = load_song(sys.argv[1])
     lo, hi = song.pitch_range()
-    print(f"{song.title}: {len(song)} notes, {song.duration:.1f}s, "
-          f"range {note_name(lo)}-{note_name(hi)}, {len(song.bar_times)} bars")
+    print(
+        f"{song.title}: {len(song)} notes, {song.duration:.1f}s, "
+        f"range {note_name(lo)}-{note_name(hi)}, {len(song.bar_times)} bars"
+    )
     for t in song.tracks:
         print(f"  track {t.index}: {t.name!r}, {t.note_count} notes, hand={t.hand or 'split'}")
     fingered = sum(1 for n in song.notes if n.finger)

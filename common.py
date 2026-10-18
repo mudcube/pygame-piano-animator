@@ -3,6 +3,7 @@ common.py - Pieces shared by the falling-notes player, the fingering editor
 and the main menu: colours, the on-screen keyboard, sound output, playback
 transport, file dialogs and a few small widgets.
 """
+
 from __future__ import annotations
 
 import bisect
@@ -17,11 +18,11 @@ from midi_loader import HIGHEST_PIANO_KEY, LEFT, LOWEST_PIANO_KEY, RIGHT, is_bla
 # --------------------------------------------------------------------------- #
 WINDOW_SIZE = (1280, 800)
 FPS = 60
-MAX_FRAME_DT = 1 / 15        # a slow frame (loading, a big redraw) never skips the song ahead
-LEAD_IN = 2.0                # seconds of empty time before the first note
+MAX_FRAME_DT = 1 / 15  # a slow frame (loading, a big redraw) never skips the song ahead
+LEAD_IN = 2.0  # seconds of empty time before the first note
 TOP_BAR_H = 34
 FELT_H = 6
-HAND_AREA_RATIO = 0.24       # share of the window height kept free below the keys
+HAND_AREA_RATIO = 0.24  # share of the window height kept free below the keys
 HAND_AREA_MIN_H = 150
 SPEED_MIN, SPEED_MAX = 0.1, 2.0
 
@@ -39,17 +40,14 @@ TEXT = (220, 220, 228)
 TEXT_DIM = (120, 120, 136)
 BAR_BG = (44, 44, 54)
 BAR_FILL = (116, 196, 64)
-ACCENT = (255, 206, 84)      # selection / highlights
+ACCENT = (255, 206, 84)  # selection / highlights
 PANEL = (40, 40, 50)
 PANEL_EDGE = (78, 78, 96)
 BUTTON = (54, 54, 68)
 BUTTON_HOVER = (74, 74, 94)
 
 # Note colours per hand: (white-key note, black-key note)
-HAND_COLORS = {
-    RIGHT: ((116, 196, 64), (74, 146, 38)),
-    LEFT: ((84, 152, 232), (48, 104, 190)),
-}
+HAND_COLORS = {RIGHT: ((116, 196, 64), (74, 146, 38)), LEFT: ((84, 152, 232), (48, 104, 190))}
 HAND_NAMES = {RIGHT: "Right hand", LEFT: "Left hand"}
 FINGER_NAMES = {1: "Thumb", 2: "Index", 3: "Middle", 4: "Ring", 5: "Little"}
 
@@ -80,9 +78,9 @@ def load_fonts():
     }
 
 
-KEY_LEN_WW = 5.6            # white key length, in white-key widths (the keys' true proportions)
-HAND_LEN_WW = 7.0           # room below the keys for the hands and forearms, in white-key widths
-BOTTOM_MAX_SHARE = 0.5      # the keys + hand area never take more than this share of the height
+KEY_LEN_WW = 5.6  # white key length, in white-key widths (the keys' true proportions)
+HAND_LEN_WW = 7.0  # room below the keys for the hands and forearms, in white-key widths
+BOTTOM_MAX_SHARE = 0.5  # the keys + hand area never take more than this share of the height
 
 
 def bottom_layout(size):
@@ -129,9 +127,9 @@ class Keyboard:
         self.black_w = self.white_w * 0.6
         self.black_h = int(rect.h * 0.63)
 
-        self.key_rects = {}          # pitch -> pygame.Rect of the key itself
-        self.lanes = {}              # pitch -> (x, width) for falling notes
-        self.lane_lines = []         # x positions of faint guides at each C and F
+        self.key_rects = {}  # pitch -> pygame.Rect of the key itself
+        self.lanes = {}  # pitch -> (x, width) for falling notes
+        self.lane_lines = []  # x positions of faint guides at each C and F
         white_index = 0
         for p in range(self.low, self.high + 1):
             if is_black_key(p):
@@ -158,8 +156,7 @@ class Keyboard:
             color = WHITE_KEY
             if p in pressed:
                 color = mix(HAND_COLORS[pressed[p]][0], (255, 255, 255), 0.15)
-            pygame.draw.rect(surf, color, r, border_bottom_left_radius=3,
-                             border_bottom_right_radius=3)
+            pygame.draw.rect(surf, color, r, border_bottom_left_radius=3, border_bottom_right_radius=3)
             pygame.draw.line(surf, WHITE_KEY_EDGE, r.topleft, (r.left, r.bottom - 1))
 
         for p, r in self.key_rects.items():
@@ -167,14 +164,11 @@ class Keyboard:
                 continue
             if p in pressed:
                 base = HAND_COLORS[pressed[p]][1]
-                pygame.draw.rect(surf, base, r, border_bottom_left_radius=2,
-                                 border_bottom_right_radius=2)
+                pygame.draw.rect(surf, base, r, border_bottom_left_radius=2, border_bottom_right_radius=2)
             else:
-                pygame.draw.rect(surf, BLACK_KEY, r, border_bottom_left_radius=2,
-                                 border_bottom_right_radius=2)
+                pygame.draw.rect(surf, BLACK_KEY, r, border_bottom_left_radius=2, border_bottom_right_radius=2)
                 bevel = pygame.Rect(r.x + 2, r.y, r.w - 4, r.h - max(4, r.h // 9))
-                pygame.draw.rect(surf, BLACK_KEY_BEVEL, bevel, border_bottom_left_radius=2,
-                                 border_bottom_right_radius=2)
+                pygame.draw.rect(surf, BLACK_KEY_BEVEL, bevel, border_bottom_left_radius=2, border_bottom_right_radius=2)
                 inner = bevel.inflate(-2, 0)
                 inner.h -= 2
                 pygame.draw.rect(surf, BLACK_KEY, inner)
@@ -208,12 +202,13 @@ class MidiOut:
             return
         try:
             import pygame.midi
+
             pygame.midi.init()
             device = pygame.midi.get_default_output_id()
             if device >= 0:
                 self.port = pygame.midi.Output(device)
                 for ch in (0, 1):
-                    self.port.set_instrument(0, ch)   # acoustic grand piano
+                    self.port.set_instrument(0, ch)  # acoustic grand piano
         except Exception as exc:  # no synth available: run silently
             print(f"Sound disabled ({exc})")
             self.port = None
@@ -236,7 +231,7 @@ class MidiOut:
     def all_off(self):
         if self.port:
             for ch in (0, 1):
-                self.port.write_short(0xB0 | ch, 123, 0)   # "all notes off"
+                self.port.write_short(0xB0 | ch, 123, 0)  # "all notes off"
 
     def control_change(self, number, value):
         """Pedals (sustain 64, sostenuto 66, soft 67) go to both hands' channels."""
@@ -254,6 +249,7 @@ class MidiOut:
             self.port.close()
             self.port = None
             import pygame.midi
+
             pygame.midi.quit()
 
 
@@ -310,7 +306,7 @@ class Transport:
         self.perf = None
         self.t = 0.0
         self.paused = True
-        self.sounding = {}             # id(note) -> (release, note) currently sent to the synth
+        self.sounding = {}  # id(note) -> (release, note) currently sent to the synth
 
     def _performance(self):
         if self.perf is None and self.song is not None:
@@ -399,18 +395,23 @@ class Transport:
 # --------------------------------------------------------------------------- #
 # File dialogs (native, via tkinter)
 # --------------------------------------------------------------------------- #
-_MIDI_TYPES = [("MIDI or PIG files", "*.mid *.midi *.txt"), ("MIDI files", "*.mid *.midi"),
-               ("PIG fingering files", "*.txt"), ("All files", "*.*")]
+_MIDI_TYPES = [
+    ("MIDI or PIG files", "*.mid *.midi *.txt"),
+    ("MIDI files", "*.mid *.midi"),
+    ("PIG fingering files", "*.txt"),
+    ("All files", "*.*"),
+]
 _SAVE_MIDI = [("MIDI file", "*.mid"), ("PIG fingering file", "*.txt")]
 _SAVE_PIG = [("PIG fingering file", "*.txt")]
 
 
 def _tk_root():
     import tkinter as tk
+
     root = tk.Tk()
     root.withdraw()
     try:
-        root.attributes("-topmost", True)   # open in front of the pygame window
+        root.attributes("-topmost", True)  # open in front of the pygame window
     except Exception:
         pass
     return root
@@ -420,9 +421,9 @@ def pick_file(title="Open MIDI file", initialdir=None):
     """Native open dialog; returns '' if cancelled or unavailable."""
     try:
         from tkinter import filedialog
+
         root = _tk_root()
-        path = filedialog.askopenfilename(parent=root, title=title, filetypes=_MIDI_TYPES,
-                                          initialdir=initialdir or None)
+        path = filedialog.askopenfilename(parent=root, title=title, filetypes=_MIDI_TYPES, initialdir=initialdir or None)
         root.destroy()
         return path or ""
     except Exception as exc:
@@ -436,12 +437,16 @@ def save_file_dialog(title="Export MIDI file", initialdir=None, initialfile=None
     """Native save dialog (MIDI or PIG; PIG only for PIG sources); '' if cancelled or unavailable."""
     try:
         from tkinter import filedialog
+
         root = _tk_root()
-        path = filedialog.asksaveasfilename(parent=root, title=title,
-                                            filetypes=_SAVE_PIG if pig_only else _SAVE_MIDI,
-                                            defaultextension=".txt" if pig_only else ".mid",
-                                            initialdir=initialdir or None,
-                                            initialfile=initialfile or None)
+        path = filedialog.asksaveasfilename(
+            parent=root,
+            title=title,
+            filetypes=_SAVE_PIG if pig_only else _SAVE_MIDI,
+            defaultextension=".txt" if pig_only else ".mid",
+            initialdir=initialdir or None,
+            initialfile=initialfile or None,
+        )
         root.destroy()
         return path or ""
     except Exception as exc:
@@ -472,7 +477,7 @@ class Button:
         self.label, self.action, self.font, self.sub, self.key_hint = label, action, font, sub, key_hint
         self.rect = pygame.Rect(0, 0, 0, 0)
         self.enabled = True
-        self.active = False            # drawn highlighted (a toggle that's on)
+        self.active = False  # drawn highlighted (a toggle that's on)
 
     def hit(self, pos):
         return self.enabled and self.rect.collidepoint(pos)
@@ -556,8 +561,7 @@ def draw_pianist_badge(surf, fonts, area, pianist, pedal=None):
     img = fonts["small"].render(name, True, TEXT_DIM)
     pad = 8
     w = img.get_width() + 30
-    box = pygame.Rect(area.right - w - pad, area.bottom - img.get_height() - 10 - pad, w,
-                      img.get_height() + 8)
+    box = pygame.Rect(area.right - w - pad, area.bottom - img.get_height() - 10 - pad, w, img.get_height() + 8)
     panel = pygame.Surface(box.size, pygame.SRCALPHA)
     panel.fill((0, 0, 0, 90))
     surf.blit(panel, box)
@@ -573,12 +577,11 @@ def draw_pianist_badge(surf, fonts, area, pianist, pedal=None):
 class Slider:
     """A horizontal slider with a label and a value readout. on_change(value) as it moves."""
 
-    def __init__(self, label, lo, hi, value, on_change, fmt=None, color=None, lo_label=None,
-                 hi_label=None, step=None):
+    def __init__(self, label, lo, hi, value, on_change, fmt=None, color=None, lo_label=None, hi_label=None, step=None):
         self.label, self.lo, self.hi, self.value = label, lo, hi, value
         self.on_change, self.fmt, self.color = on_change, fmt or (lambda v: f"{v:.2f}"), color
         self.lo_label, self.hi_label, self.step = lo_label, hi_label, step
-        self.rect = pygame.Rect(0, 0, 0, 0)       # whole widget
+        self.rect = pygame.Rect(0, 0, 0, 0)  # whole widget
         self.track = pygame.Rect(0, 0, 0, 0)
         self.dragging = False
         self.enabled = True
@@ -604,7 +607,7 @@ class Slider:
     def handle_event(self, event):
         """True if the event was the slider's."""
         if not self.enabled or self.track.w <= 0:
-            return False                  # not laid out (drawn) yet
+            return False  # not laid out (drawn) yet
         hit = self.track.inflate(16, 22)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and hit.collidepoint(event.pos):
             self.dragging = True
@@ -673,7 +676,7 @@ class TextInput:
         if event.type == pygame.TEXTINPUT:
             add = "".join(ch for ch in event.text if ch.isprintable())
             if add and len(self.text) < self.max_len:
-                self.text = (self.text + add)[:self.max_len]
+                self.text = (self.text + add)[: self.max_len]
                 if self.on_change:
                     self.on_change(self.text)
             return True
@@ -682,7 +685,7 @@ class TextInput:
             if event.key == pygame.K_BACKSPACE:
                 if mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
                     self.text = self.text.rstrip()
-                    self.text = self.text[:self.text.rfind(" ") + 1] if " " in self.text else ""
+                    self.text = self.text[: self.text.rfind(" ") + 1] if " " in self.text else ""
                 else:
                     self.text = self.text[:-1]
                 if self.on_change:
@@ -693,7 +696,7 @@ class TextInput:
             elif event.key == pygame.K_ESCAPE:
                 self.set_focus(False)
                 return True
-            return True        # typing never reaches the app's shortcuts
+            return True  # typing never reaches the app's shortcuts
         return False
 
     def draw(self, surf, fonts, font="normal"):
