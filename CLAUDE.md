@@ -78,9 +78,12 @@ gestures, editor state after scripted keys). Keep tests fast and free of local d
 ## Current work lives in Butterboard
 
 Tasks for `pygame-piano-animator` live in Butterboard. Before working on them, run `butterboard guide`
-in this repository and follow it (without the `butterboard` command, run
-`node /Users/mikomeow/projects/butterboard/execution/task-cli.mjs guide`). Miko authorizes you to manage this project's tasks with its key.
+in this repository and follow it. Miko authorizes you to manage this project's tasks with its key.
 
 Board: https://butterboard.butter/pygame-piano-animator
+
+Deploys: only `live-prod` and `live-dev` deploy; the ops machine moves them after Miko approves.
+Never commit to or create `live-prod` or `live-dev` locally.
+To deploy, request promotion by handoff or Butterboard comment with the repo, target, exact commit SHA and what changed.
 
 <!-- butterboard-task-authority:end -->
