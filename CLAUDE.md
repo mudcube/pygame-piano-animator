@@ -77,8 +77,11 @@ gestures, editor state after scripted keys). Keep tests fast and free of local d
 
 ## Current work lives in Butterboard
 
-Tasks for `pygame-piano-animator` live in Butterboard. Before working on them, run `butterboard guide`
+Tasks for `pygame-piano-animator` live in Butterboard. Before working on them, run `butter guide`
 in this repository and follow it. Miko authorizes you to manage this project's tasks with its key.
+
+Host (Mac): `butter` is in `~/.local/bin`; if missing, run `~/projects/butterboard/scripts/install-cli.sh`.
+VM guest: `butter` is in `~/.local/bin`; if missing, run `vm tools update butterboard`.
 
 Board: https://butterboard.butter/pygame-piano-animator
 
